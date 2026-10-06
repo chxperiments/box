@@ -1,14 +1,14 @@
 #!/bin/sh
 # box installer.
 #
-#   curl -fsSL https://chxperiments.github.io/bluebox/install.sh | sh
+#   curl -fsSL https://chxperiments.github.io/box/install.sh | sh
 #
 # Downloads the release build for this platform and puts it on your PATH.
 # Override where it lands with BOX_BIN_DIR, or pin a version with
 # BOX_VERSION=v0.2.0.
 set -eu
 
-REPO="chxperiments/bluebox"
+REPO="chxperiments/box"
 BIN_DIR="${BOX_BIN_DIR:-$HOME/.local/bin}"
 
 die() { echo "install: $*" >&2; exit 1; }

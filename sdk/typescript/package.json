@@ -13,6 +13,6 @@
     "build": "tsc -p tsconfig.json",
     "test": "node --test test/*.test.mjs"
   },
-  "repository": { "type": "git", "url": "https://github.com/chxperiments/bluebox", "directory": "sdk/typescript" },
+  "repository": { "type": "git", "url": "https://github.com/chxperiments/box", "directory": "sdk/typescript" },
   "devDependencies": { "typescript": "^5.6.0", "@types/node": "^22.0.0" }
 }

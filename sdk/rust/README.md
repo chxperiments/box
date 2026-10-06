@@ -5,7 +5,7 @@ Blocking API; depends only on `serde`, `serde_json` and `sha2`.
 
 ```toml
 [dependencies]
-sdbox = { git = "https://github.com/chxperiments/bluebox" }
+sdbox = { git = "https://github.com/chxperiments/box" }
 ```
 
 ```rust

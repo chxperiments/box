@@ -7,7 +7,7 @@ PAGES = [
     ("benchmarks.html", "Benchmarks"),
     ("docs.html", "Docs"),
 ]
-GH = "https://github.com/chxperiments/bluebox"
+GH = "https://github.com/chxperiments/box"
 
 
 # GitHub's mark, from @primer/octicons (mark-github-16).
@@ -80,8 +80,8 @@ def page(filename, title, description, body):
       <div>
         <p class="footer-lead">A box for your AI.</p>
         <div class="install">
-          <code><span class="p">$ </span>curl -fsSL https://chxperiments.github.io/bluebox/install.sh | sh</code>
-          <button class="copy" type="button" data-copy="curl -fsSL https://chxperiments.github.io/bluebox/install.sh | sh">Copy</button>
+          <code><span class="p">$ </span>curl -fsSL https://chxperiments.github.io/box/install.sh | sh</code>
+          <button class="copy" type="button" data-copy="curl -fsSL https://chxperiments.github.io/box/install.sh | sh">Copy</button>
         </div>
       </div>
       <nav aria-label="Project">

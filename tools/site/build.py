@@ -253,8 +253,8 @@ overview = f"""
     <p class="lead">Let your agent install, delete and break things. It does it in its own virtual machine, and nothing outside it changes.</p>
     <div class="install-wrap">
       <div class="install">
-        <code><span class="p">$ </span>curl -fsSL https://chxperiments.github.io/bluebox/install.sh | sh</code>
-        <button class="copy" type="button" data-copy="curl -fsSL https://chxperiments.github.io/bluebox/install.sh | sh">Copy</button>
+        <code><span class="p">$ </span>curl -fsSL https://chxperiments.github.io/box/install.sh | sh</code>
+        <button class="copy" type="button" data-copy="curl -fsSL https://chxperiments.github.io/box/install.sh | sh">Copy</button>
       </div>
     </div>
     <div class="cta-row">
@@ -763,7 +763,7 @@ docs = f"""
   <article class="doc">
     <h2 id="install">Install</h2>
     <p>box needs Linux with KVM (or macOS with a podman machine), podman, and crun built with libkrun. The firecracker backend downloads a pinned Firecracker and guest kernel on first use and verifies their SHA-256.</p>
-    <pre class="code">curl -fsSL https://chxperiments.github.io/bluebox/install.sh | sh
+    <pre class="code">curl -fsSL https://chxperiments.github.io/box/install.sh | sh
 box doctor          {c('# checks podman, KVM, krun, subordinate UIDs; prints a fix for each failure')}</pre>
 
     <h2 id="quickstart">Quick start</h2>
@@ -794,8 +794,8 @@ box down agent</pre>
     {api_code("install",
       'pip install ./sdk/python          ' + c('# from a box checkout') + '\n\nfrom sdbox import Client, Sandbox',
       'npm install ./sdk/typescript      ' + c('// from a box checkout') + '\n\nimport { Client, Sandbox } from "box-sdk";',
-      'go get github.com/chxperiments/bluebox/sdk/go\n\nimport "github.com/chxperiments/bluebox/sdk/go"',
-      'cargo add --git https://github.com/chxperiments/bluebox sdbox\n\nuse sdbox::{Client, Command, Sandbox};')}
+      'go get github.com/chxperiments/box/sdk/go\n\nimport "github.com/chxperiments/box/sdk/go"',
+      'cargo add --git https://github.com/chxperiments/box sdbox\n\nuse sdbox::{Client, Command, Sandbox};')}
 
     <h3 id="sdk-up">up and down</h3>
     <p>Boot a VM once and keep it running for <code>exec</code>. The context-manager forms bring it down afterwards unless it was already up.</p>

@@ -6,15 +6,15 @@ They can install, delete and break whatever they like inside it; nothing
 outside changes. Every command runs in a disposable microVM with its own
 kernel, defined in one file and started in milliseconds.
 
-**[Docs](https://chxperiments.github.io/bluebox/docs.html)** ·
-[Architecture](https://chxperiments.github.io/bluebox/architecture.html) ·
+**[Docs](https://chxperiments.github.io/box/docs.html)** ·
+[Architecture](https://chxperiments.github.io/box/architecture.html) ·
 [Security](SECURITY.md) ·
 [Benchmarks](bench/RESULTS.md)
 
 ## Install
 
 ```sh
-curl -fsSL https://chxperiments.github.io/bluebox/install.sh | sh
+curl -fsSL https://chxperiments.github.io/box/install.sh | sh
 box doctor    # checks podman, libkrun and KVM, and prints a fix for anything missing
 ```
 

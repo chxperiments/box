@@ -41,9 +41,9 @@ depends on the one before. There are no dates.
 Also planned: a fuller guest kernel so Kubernetes in the `k8s` example gets
 overlay networking and Services ([#9]).
 
-[#7]: https://github.com/chxperiments/bluebox/issues/7
-[#8]: https://github.com/chxperiments/bluebox/issues/8
-[#9]: https://github.com/chxperiments/bluebox/issues/9
-[#10]: https://github.com/chxperiments/bluebox/issues/10
-[#15]: https://github.com/chxperiments/bluebox/issues/15
-[#16]: https://github.com/chxperiments/bluebox/issues/16
+[#7]: https://github.com/chxperiments/box/issues/7
+[#8]: https://github.com/chxperiments/box/issues/8
+[#9]: https://github.com/chxperiments/box/issues/9
+[#10]: https://github.com/chxperiments/box/issues/10
+[#15]: https://github.com/chxperiments/box/issues/15
+[#16]: https://github.com/chxperiments/box/issues/16

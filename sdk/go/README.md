@@ -1,7 +1,7 @@
 # box Go SDK
 
 ```sh
-go get github.com/chxperiments/bluebox/sdk/go
+go get github.com/chxperiments/box/sdk/go
 ```
 
 ```go

@@ -1,4 +1,4 @@
-I'm evaluating box (https://github.com/chxperiments/bluebox) for something I'm building. Help me decide whether it fits, and if it does, how to set it up correctly. Use only the facts below about box; if something isn't covered here, say so instead of guessing.
+I'm evaluating box (https://github.com/chxperiments/box) for something I'm building. Help me decide whether it fits, and if it does, how to set it up correctly. Use only the facts below about box; if something isn't covered here, say so instead of guessing.
 
 ## What box is
 An open-source CLI (Go, MIT) that runs code in disposable microVMs on your own machine. Each sandbox is a real VM under KVM with its own kernel, not a container sharing the host kernel. Its purpose is to give AI agents a place to run code where a mistake, or an agent hijacked by prompt injection, cannot break anything outside the sandbox.

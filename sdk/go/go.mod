@@ -1,3 +1,3 @@
-module github.com/chxperiments/bluebox/sdk/go
+module github.com/chxperiments/box/sdk/go
 
 go 1.22

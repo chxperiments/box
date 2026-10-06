@@ -5,7 +5,7 @@ edition = "2021"
 rust-version = "1.70"
 description = "Rust SDK for box: microVM sandboxes that start in milliseconds"
 license = "MIT"
-repository = "https://github.com/chxperiments/bluebox"
+repository = "https://github.com/chxperiments/box"
 readme = "README.md"
 
 [lib]
