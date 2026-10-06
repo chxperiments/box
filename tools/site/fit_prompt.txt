@@ -1,39 +1,39 @@
-I'm evaluating bluebox (https://github.com/chxperiments/bluebox) for something I'm building. Help me decide whether it fits, and if it does, how to set it up correctly. Use only the facts below about bluebox; if something isn't covered here, say so instead of guessing.
+I'm evaluating box (https://github.com/chxperiments/bluebox) for something I'm building. Help me decide whether it fits, and if it does, how to set it up correctly. Use only the facts below about box; if something isn't covered here, say so instead of guessing.
 
-## What bluebox is
+## What box is
 An open-source CLI (Go, MIT) that runs code in disposable microVMs on your own machine. Each sandbox is a real VM under KVM with its own kernel, not a container sharing the host kernel. Its purpose is to give AI agents a place to run code where a mistake, or an agent hijacked by prompt injection, cannot break anything outside the sandbox.
 
 ## How it works
-- A sandbox is defined by one YAML file, the Bluefile. `bluebox build` turns it into an image and checks that the guest kernel differs from the host's; if not, it refuses the sandbox.
-- `bluebox run <name> -- <cmd>` boots a fresh VM per command. Nothing carries over between runs except `/data`, a directory persisted on the host (~/.bluebox/data/<name>/).
-- `bluebox up` / `exec` / `down` keeps one VM running so commands are fast and state (files, packages, processes) lasts until `down`.
+- A sandbox is defined by one YAML file, the Boxfile. `box build` turns it into an image and checks that the guest kernel differs from the host's; if not, it refuses the sandbox.
+- `box run <name> -- <cmd>` boots a fresh VM per command. Nothing carries over between runs except `/data`, a directory persisted on the host (~/.box/data/<name>/).
+- `box up` / `exec` / `down` keeps one VM running so commands are fast and state (files, packages, processes) lasts until `down`.
 - `warm: N` keeps N VMs pre-booted, so a fresh-VM `run` starts in milliseconds. Each pooled VM serves exactly one run.
-- Forks: `bluebox fork <name> <fork>` branches `/data` as an overlay. `diff` shows what changed, then `apply` merges it into the parent or `discard` throws it away. This is how an agent's changes get reviewed before they land.
-- `bluebox data import|export <name> <dir>` copies files into or out of `/data`. Exported files are treated as hostile (symlinks never followed, setuid dropped).
+- Forks: `box fork <name> <fork>` branches `/data` as an overlay. `diff` shows what changed, then `apply` merges it into the parent or `discard` throws it away. This is how an agent's changes get reviewed before they land.
+- `box data import|export <name> <dir>` copies files into or out of `/data`. Exported files are treated as hostile (symlinks never followed, setuid dropped).
 
-## Backends (`backend:` in the Bluefile)
+## Backends (`backend:` in the Boxfile)
 - podman (default): podman with the krun runtime (libkrun). Supports everything. Cold run ~1.3–1.5 s.
 - krun: drives crun's libkrun handler directly. Cold run ~0.75–1.1 s. `isolation: standard` only for now.
 - firecracker: restores a snapshot per run, ~0.3 s, no pool needed. x86_64 Linux only; no networking, no host mounts, no forks yet.
 Measured: a warm `run` is ~20–45 ms; `exec` in a running sandbox is ~15 ms for a no-op.
 
-## Bluefile reference (unknown keys are rejected)
+## Boxfile reference (unknown keys are rejected)
 base (image ref), backend, cpus (max 16), ram_mib, network (bridge = internet, none = offline), readonly (read-only root; /tmp and /data stay writable), isolation (standard | strict), timeout_seconds (per run; a timed-out run exits 124), warm (0–8, needs network: bridge), warmup (commands run in each pooled VM first), packages (apk, apt or dnf, chosen from the base), run (build steps), env, mounts (host dir → guest path, ro by default; strict allows ro only), blueprint (users, write_files, runcmd, applied at build time).
 
 ## Driving it
 - CLI: new [--from example], build, run, shell, up, exec, down, fork, diff, apply, discard, snapshot, restore, reset, data import/export, doctor (checks the host and prints fixes), verify, logs, destroy.
-- SDKs for Python, TypeScript, Go and Rust talk to `bluebox serve`, a local API on an owner-only Unix socket. Python example: `with Sandbox("devbox") as sb: sb.exec(["python3", "-c", "print(1)"])`. They expose run, up, exec, down, read_file, write_file, fork, diff, apply, discard.
-- MCP: `claude mcp add bluebox -- bluebox mcp` gives an agent list_sandboxes, run, up, exec, down, read_file, write_file, fork, diff, discard. `apply` is withheld unless started with `--allow-apply`, so a human reviews forks. Creating and building sandboxes stays on the CLI.
+- SDKs for Python, TypeScript, Go and Rust talk to `box serve`, a local API on an owner-only Unix socket. Python example: `with Sandbox("devbox") as sb: sb.exec(["python3", "-c", "print(1)"])`. They expose run, up, exec, down, read_file, write_file, fork, diff, apply, discard.
+- MCP: `claude mcp add box -- box mcp` gives an agent list_sandboxes, run, up, exec, down, read_file, write_file, fork, diff, discard. `apply` is withheld unless started with `--allow-apply`, so a human reviews forks. Creating and building sandboxes stays on the CLI.
 
 ## Security model
 Two layers: the guest runs on its own kernel under KVM, and the VMM process on the host is itself confined (no_new_privs, seccomp, its own network namespace, pids and memory limits, a reduced capability set; Firecracker's VMM runs with zero capabilities). With `isolation: strict` the VMM runs as a subordinate UID instead of yours, so escaping both the VM and the VMM does not land in your account. Use strict for agents. An escape test suite ships in the repo.
 Not covered: all strict sandboxes share one subordinate UID, so strict separates sandboxes from you, not from each other. The kernel check catches a fallback to a plain container but cannot catch a guest that lies about its kernel. It is not designed for hostile multi-tenant hosting.
 
 ## Requirements and limits
-Linux with KVM (/dev/kvm), podman and libkrun (crun built with +LIBKRUN). macOS works through a podman machine, but up/exec, the warm pool, forks and the krun and firecracker backends are Linux-only. It runs on your machine or your server: it is not a hosted service and has no GPU support. `bluebox shell` has a TTY; `exec` does not yet.
+Linux with KVM (/dev/kvm), podman and libkrun (crun built with +LIBKRUN). macOS works through a podman machine, but up/exec, the warm pool, forks and the krun and firecracker backends are Linux-only. It runs on your machine or your server: it is not a hosted service and has no GPU support. `box shell` has a TTY; `exec` does not yet.
 
 ## What I want from you
 1. Ask me what I'm building: what the agent (or other code) will do and what it must never be able to touch, how many runs and how fast they need to be, whether it needs the network, files from the host, a GPU, or my OS, and where it will run.
 2. Then give a clear verdict: good fit, partial fit, or not a fit. Explain why, using the facts above.
-3. If it fits, write the Bluefile I should start with (isolation: strict for agents), the commands to get running, and the SDK or MCP setup for my case. Mention the limits that will affect me.
+3. If it fits, write the Boxfile I should start with (isolation: strict for agents), the commands to get running, and the SDK or MCP setup for my case. Mention the limits that will affect me.
 4. If it doesn't fit, say what would serve me better and why.

@@ -1,4 +1,4 @@
-"""Line-art figures for the site: white strokes on the blue, drawn by CSS
+"""Line-art figures for the site: white strokes on the black, drawn by CSS
 (stroke-dashoffset on pathLength=1) and moved by SMIL, which site.js pauses
 under prefers-reduced-motion."""
 
@@ -116,7 +116,7 @@ def architecture():
     ]
     out = []
     out.append('<rect class="s" pathLength="1" style="--i:0" x="170" y="40" width="860" height="54"/>')
-    out.append('<text class="big lbl" x="194" y="74" style="--i:0">bluebox: CLI, SDKs, local API</text>')
+    out.append('<text class="big lbl" x="194" y="74" style="--i:0">box: CLI, SDKs, local API</text>')
     for r, (name, y, cells) in enumerate(rows, start=1):
         out.append(f'<text class="dim lbl" x="20" y="{y + 28}" style="--i:{r}">{name}</text>')
         for (col, x), label in zip(cols, cells):
@@ -132,10 +132,10 @@ def architecture():
         line = f"M{gx},94 V510"
         out.append(f'<path class="s dash" style="--i:{i}" d="{line}"/>')
         out.append(
-            f'<circle class="f" r="4" opacity="0"><animateMotion dur="2.4s" begin="{i * 0.4}s" repeatCount="indefinite" path="{line}"/>'
+            f'<circle class="sig" r="4" opacity="0"><animateMotion dur="2.4s" begin="{i * 0.4}s" repeatCount="indefinite" path="{line}"/>'
             f'<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="2.4s" begin="{i * 0.4}s" repeatCount="indefinite"/></circle>')
     return f"""<svg class="art draw" viewBox="0 0 1060 530" role="img" aria-labelledby="arch-art-t">
-  <title id="arch-art-t">A command flows from the bluebox interface down each backend, through its launcher, VMM and host confinement, across KVM, into the guest.</title>
+  <title id="arch-art-t">A command flows from the box interface down each backend, through its launcher, VMM and host confinement, across KVM, into the guest.</title>
   {''.join(out)}
 </svg>"""
 
@@ -191,8 +191,9 @@ def security():
 
 def spinning_box(cx, cy, s, frames=24, dur=4.8):
     """A solid box turning on its vertical axis, as SMIL keyframes. The
-    silhouette is the union of its faces filled in ink; the edges of the
-    faces turned toward the viewer are drawn in the ground colour. A quarter
+    silhouette is the union of its faces filled in the signal blue, the one
+    blue object on the page; the edges of the faces turned toward the viewer
+    are drawn in white. A quarter
     turn repeats exactly, so the loop has no seam."""
     e = radians(28)
     corners = [(x, y, z) for x in (-1, 1) for y in (-1, 1) for z in (-1, 1)]
@@ -223,7 +224,7 @@ def spinning_box(cx, cy, s, frames=24, dur=4.8):
         return f'<animate attributeName="{attr}" dur="{dur}s" repeatCount="indefinite" values="{";".join(vals)}"/>'
     g = []
     for j in range(5):
-        g.append(f'<path class="f" d="{fill[j][0]}">{anim("d", fill[j])}</path>')
+        g.append(f'<path class="sig" d="{fill[j][0]}">{anim("d", fill[j])}</path>')
     for j in range(5):
         g.append(f'<path class="cube-edge" d="{fill[j][0]}" stroke-opacity="{vis[j][0]}">'
                  f'{anim("d", fill[j])}{anim("stroke-opacity", vis[j])}</path>')
@@ -231,27 +232,27 @@ def spinning_box(cx, cy, s, frames=24, dur=4.8):
 
 
 def workflow():
-    """bluebox as a workflow: three ways in, one router, three engines, each
+    """box as a workflow: three ways in, one router, three engines, each
     booting its own microVM. Signals travel every connector."""
     out = []
     W = 1120
 
-    def node(x, y, w, h, title, sub="", i=0, strong=False):
-        cls = "s node-strong" if strong else "s"
+    def node(x, y, w, h, title, sub="", i=0):
+        cls = "s"
         g = [f'<rect class="{cls}" pathLength="1" style="--i:{i}" x="{x}" y="{y}" width="{w}" height="{h}"/>']
         ty = y + (h / 2 + 6 if not sub else h / 2 - 3)
-        g.append(f'<text class="big lbl{" on-strong" if strong else ""}" style="--i:{i}" x="{x + 18}" y="{ty:.0f}">{title}</text>')
+        g.append(f'<text class="big lbl" style="--i:{i}" x="{x + 18}" y="{ty:.0f}">{title}</text>')
         if sub:
-            g.append(f'<text class="dim lbl{" on-strong" if strong else ""}" style="--i:{i}" x="{x + 18}" y="{ty + 20:.0f}">{sub}</text>')
+            g.append(f'<text class="dim lbl" style="--i:{i}" x="{x + 18}" y="{ty + 20:.0f}">{sub}</text>')
         return "".join(g)
 
     def flow(d, i, dur, begin):
         return (f'<path class="s thin" pathLength="1" style="--i:{i}" d="{d}"/>'
-                f'<circle class="f" r="4" opacity="0"><animateMotion dur="{dur}s" begin="{begin}s" repeatCount="indefinite" path="{d}"/>'
+                f'<circle class="sig" r="4" opacity="0"><animateMotion dur="{dur}s" begin="{begin}s" repeatCount="indefinite" path="{d}"/>'
                 f'<animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.1;0.85;1" dur="{dur}s" begin="{begin}s" repeatCount="indefinite"/></circle>')
 
     # Inputs
-    inputs = [("CLI", "bluebox run, exec", 70), ("SDKs", "Python, TS, Go, Rust", 230), ("MCP", "for AI agents", 390)]
+    inputs = [("CLI", "box run, exec", 70), ("SDKs", "Python, TS, Go, Rust", 230), ("MCP", "for AI agents", 390)]
     for k, (t, sub, y) in enumerate(inputs):
         out.append(node(20, y, 190, 64, t, sub, i=0))
         out.append(flow(f"M210,{y + 32} C300,{y + 32} 310,262 402,262", 1, 2.2, k * 0.5))
@@ -271,7 +272,7 @@ def workflow():
                    f'<path class="f pulse" d="{iso_cube(cx, cy, 8).split(" M")[0]}"/>')
     out.append('<text class="dim lbl" style="--i:6" x="1062" y="490" text-anchor="middle">own kernel</text>')
     return f"""<svg class="art draw workflow sans" viewBox="0 0 {W} 500" role="img" aria-labelledby="wf-t">
-  <title id="wf-t">Calls from the CLI, the SDKs and MCP go to bluebox, which reads the Bluefile's backend and boots the sandbox with podman, krun or Firecracker, each a microVM with its own kernel.</title>
+  <title id="wf-t">Calls from the CLI, the SDKs and MCP go to box, which reads the Boxfile's backend and boots the sandbox with podman, krun or Firecracker, each a microVM with its own kernel.</title>
   {''.join(out)}
 </svg>"""
 

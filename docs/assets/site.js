@@ -1,4 +1,4 @@
-// bluebox site behaviour. Every piece checks for its own markup, so one
+// box site behaviour. Every piece checks for its own markup, so one
 // script serves every page.
 (function () {
   "use strict";
@@ -67,7 +67,7 @@
 
   // Language tabs: one choice switches every code sample on the page and is
   // remembered, as reference docs usually do.
-  var langKey = "bluebox-lang";
+  var langKey = "box-lang";
   function setLang(lang) {
     document.querySelectorAll("[data-lang-panel]").forEach(function (p) {
       var group = p.closest("[data-lang-group]");
@@ -102,7 +102,7 @@
     setLang(saved || tabs[0].getAttribute("data-lang"));
   }
 
-  // Bluefile explorer: point at a line to read what it declares.
+  // Boxfile explorer: point at a line to read what it declares.
   var lines = Array.prototype.slice.call(document.querySelectorAll("#bf .ln[data-note]"));
   if (lines.length) {
     var key = document.getElementById("bf-key"), what = document.getElementById("bf-what"), becomes = document.getElementById("bf-becomes");

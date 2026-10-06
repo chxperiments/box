@@ -3,11 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Docs | bluebox</title>
-<meta name="description" content="Install bluebox, write a Bluefile, and drive sandboxes from the CLI or the Python, TypeScript and Go SDKs.">
-<meta property="og:title" content="Docs | bluebox">
-<meta property="og:description" content="Install bluebox, write a Bluefile, and drive sandboxes from the CLI or the Python, TypeScript and Go SDKs.">
-<meta name="theme-color" content="#1300f9">
+<title>Docs | box</title>
+<meta name="description" content="Install box, write a Boxfile, and drive sandboxes from the CLI or the Python, TypeScript and Go SDKs.">
+<meta property="og:title" content="Docs | box">
+<meta property="og:description" content="Install box, write a Boxfile, and drive sandboxes from the CLI or the Python, TypeScript and Go SDKs.">
+<meta name="theme-color" content="#000000">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -23,8 +23,8 @@
     <a href="benchmarks.html">Benchmarks</a>
   </nav>
   <div class="nav-mid">
-    <a class="brand" href="index.html" aria-label="bluebox, home"><svg class="logo logo-v" viewBox="-710 -3630 722 3560" aria-hidden="true"><g transform="rotate(-90)"><path style="--i:0" d="M357 12Q301 12 259.5 -12.0Q218 -36 195 -79L192 0H70V-710H198V-458Q220 -495 261.0 -520.5Q302 -546 357 -546Q426 -546 476.5 -511.5Q527 -477 554.5 -414.5Q582 -352 582 -267Q582 -182 554.5 -119.5Q527 -57 476.5 -22.5Q426 12 357 12ZM328 -92Q383 -92 416.0 -138.5Q449 -185 449 -267Q449 -350 416.5 -396.0Q384 -442 329 -442Q288 -442 258.5 -421.5Q229 -401 213.5 -362.0Q198 -323 198 -267Q198 -213 213.5 -173.5Q229 -134 258.0 -113.0Q287 -92 328 -92Z"/><path style="--i:1" d="M784 0Q726 0 691.0 -30.0Q656 -60 656 -126V-710H784V-139Q784 -119 794.5 -109.0Q805 -99 824 -99H863V0Z"/><path style="--i:2" d="M1091 12Q1010 12 962.5 -41.5Q915 -95 915 -190V-534H1043V-222Q1043 -155 1065.5 -123.5Q1088 -92 1134 -92Q1186 -92 1214.5 -126.5Q1243 -161 1243 -227V-534H1371V0H1254L1252 -87Q1237 -51 1210 -27Q1165 12 1091 12Z"/><path style="--i:3" d="M1703 12Q1623 12 1564.0 -22.5Q1505 -57 1473.0 -120.0Q1441 -183 1441 -267Q1441 -351 1473.0 -413.5Q1505 -476 1563.5 -511.0Q1622 -546 1700 -546Q1776 -546 1833.5 -512.0Q1891 -478 1922.0 -414.0Q1953 -350 1953 -260V-231H1574Q1578 -161 1612.5 -125.5Q1647 -90 1704 -90Q1747 -90 1775.5 -109.5Q1804 -129 1815 -164L1946 -156Q1924 -78 1859.5 -33.0Q1795 12 1703 12ZM1574 -317H1821Q1817 -382 1784.0 -413.5Q1751 -445 1700 -445Q1649 -445 1615.5 -412.0Q1582 -379 1574 -317Z"/><path style="--i:4" d="M2310 12Q2254 12 2212.5 -12.0Q2171 -36 2148 -79L2145 0H2023V-710H2151V-458Q2173 -495 2214.0 -520.5Q2255 -546 2310 -546Q2379 -546 2429.5 -511.5Q2480 -477 2507.5 -414.5Q2535 -352 2535 -267Q2535 -182 2507.5 -119.5Q2480 -57 2429.5 -22.5Q2379 12 2310 12ZM2281 -92Q2336 -92 2369.0 -138.5Q2402 -185 2402 -267Q2402 -350 2369.5 -396.0Q2337 -442 2282 -442Q2241 -442 2211.5 -421.5Q2182 -401 2166.5 -362.0Q2151 -323 2151 -267Q2151 -213 2166.5 -173.5Q2182 -134 2211.0 -113.0Q2240 -92 2281 -92Z"/><path style="--i:5" d="M2836 12Q2757 12 2697.5 -22.5Q2638 -57 2605.5 -120.0Q2573 -183 2573 -267Q2573 -352 2605.5 -414.5Q2638 -477 2697.5 -511.5Q2757 -546 2836 -546Q2915 -546 2974.0 -511.5Q3033 -477 3065.5 -414.5Q3098 -352 3098 -267Q3098 -183 3065.5 -120.0Q3033 -57 2974.0 -22.5Q2915 12 2836 12ZM2836 -92Q2898 -92 2931.5 -138.0Q2965 -184 2965 -267Q2965 -349 2931.5 -395.5Q2898 -442 2836 -442Q2774 -442 2740.0 -395.5Q2706 -349 2706 -267Q2706 -184 2740.0 -138.0Q2774 -92 2836 -92Z"/><path style="--i:6" d="M3094 0 3286 -272 3101 -534H3240L3362 -352L3482 -534H3623L3439 -271L3630 0H3491L3364 -192L3236 0Z"/></g></svg><svg class="logo logo-h" viewBox="70 -710 3560 722" aria-hidden="true"><path style="--i:0" d="M357 12Q301 12 259.5 -12.0Q218 -36 195 -79L192 0H70V-710H198V-458Q220 -495 261.0 -520.5Q302 -546 357 -546Q426 -546 476.5 -511.5Q527 -477 554.5 -414.5Q582 -352 582 -267Q582 -182 554.5 -119.5Q527 -57 476.5 -22.5Q426 12 357 12ZM328 -92Q383 -92 416.0 -138.5Q449 -185 449 -267Q449 -350 416.5 -396.0Q384 -442 329 -442Q288 -442 258.5 -421.5Q229 -401 213.5 -362.0Q198 -323 198 -267Q198 -213 213.5 -173.5Q229 -134 258.0 -113.0Q287 -92 328 -92Z"/><path style="--i:1" d="M784 0Q726 0 691.0 -30.0Q656 -60 656 -126V-710H784V-139Q784 -119 794.5 -109.0Q805 -99 824 -99H863V0Z"/><path style="--i:2" d="M1091 12Q1010 12 962.5 -41.5Q915 -95 915 -190V-534H1043V-222Q1043 -155 1065.5 -123.5Q1088 -92 1134 -92Q1186 -92 1214.5 -126.5Q1243 -161 1243 -227V-534H1371V0H1254L1252 -87Q1237 -51 1210 -27Q1165 12 1091 12Z"/><path style="--i:3" d="M1703 12Q1623 12 1564.0 -22.5Q1505 -57 1473.0 -120.0Q1441 -183 1441 -267Q1441 -351 1473.0 -413.5Q1505 -476 1563.5 -511.0Q1622 -546 1700 -546Q1776 -546 1833.5 -512.0Q1891 -478 1922.0 -414.0Q1953 -350 1953 -260V-231H1574Q1578 -161 1612.5 -125.5Q1647 -90 1704 -90Q1747 -90 1775.5 -109.5Q1804 -129 1815 -164L1946 -156Q1924 -78 1859.5 -33.0Q1795 12 1703 12ZM1574 -317H1821Q1817 -382 1784.0 -413.5Q1751 -445 1700 -445Q1649 -445 1615.5 -412.0Q1582 -379 1574 -317Z"/><path style="--i:4" d="M2310 12Q2254 12 2212.5 -12.0Q2171 -36 2148 -79L2145 0H2023V-710H2151V-458Q2173 -495 2214.0 -520.5Q2255 -546 2310 -546Q2379 -546 2429.5 -511.5Q2480 -477 2507.5 -414.5Q2535 -352 2535 -267Q2535 -182 2507.5 -119.5Q2480 -57 2429.5 -22.5Q2379 12 2310 12ZM2281 -92Q2336 -92 2369.0 -138.5Q2402 -185 2402 -267Q2402 -350 2369.5 -396.0Q2337 -442 2282 -442Q2241 -442 2211.5 -421.5Q2182 -401 2166.5 -362.0Q2151 -323 2151 -267Q2151 -213 2166.5 -173.5Q2182 -134 2211.0 -113.0Q2240 -92 2281 -92Z"/><path style="--i:5" d="M2836 12Q2757 12 2697.5 -22.5Q2638 -57 2605.5 -120.0Q2573 -183 2573 -267Q2573 -352 2605.5 -414.5Q2638 -477 2697.5 -511.5Q2757 -546 2836 -546Q2915 -546 2974.0 -511.5Q3033 -477 3065.5 -414.5Q3098 -352 3098 -267Q3098 -183 3065.5 -120.0Q3033 -57 2974.0 -22.5Q2915 12 2836 12ZM2836 -92Q2898 -92 2931.5 -138.0Q2965 -184 2965 -267Q2965 -349 2931.5 -395.5Q2898 -442 2836 -442Q2774 -442 2740.0 -395.5Q2706 -349 2706 -267Q2706 -184 2740.0 -138.0Q2774 -92 2836 -92Z"/><path style="--i:6" d="M3094 0 3286 -272 3101 -534H3240L3362 -352L3482 -534H3623L3439 -271L3630 0H3491L3364 -192L3236 0Z"/></svg></a>
-    <a class="nav-gh" href="https://github.com/chxperiments/bluebox" aria-label="bluebox on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"/></svg></a>
+    <a class="brand" href="index.html" aria-label="box, home"><svg class="logo" viewBox="70 -710 1607 722" aria-hidden="true"><path style="--i:0" d="M357 12Q301 12 259.5 -12.0Q218 -36 195 -79L192 0H70V-710H198V-458Q220 -495 261.0 -520.5Q302 -546 357 -546Q426 -546 476.5 -511.5Q527 -477 554.5 -414.5Q582 -352 582 -267Q582 -182 554.5 -119.5Q527 -57 476.5 -22.5Q426 12 357 12ZM328 -92Q383 -92 416.0 -138.5Q449 -185 449 -267Q449 -350 416.5 -396.0Q384 -442 329 -442Q288 -442 258.5 -421.5Q229 -401 213.5 -362.0Q198 -323 198 -267Q198 -213 213.5 -173.5Q229 -134 258.0 -113.0Q287 -92 328 -92Z"/><path style="--i:1" d="M883 12Q804 12 744.5 -22.5Q685 -57 652.5 -120.0Q620 -183 620 -267Q620 -352 652.5 -414.5Q685 -477 744.5 -511.5Q804 -546 883 -546Q962 -546 1021.0 -511.5Q1080 -477 1112.5 -414.5Q1145 -352 1145 -267Q1145 -183 1112.5 -120.0Q1080 -57 1021.0 -22.5Q962 12 883 12ZM883 -92Q945 -92 978.5 -138.0Q1012 -184 1012 -267Q1012 -349 978.5 -395.5Q945 -442 883 -442Q821 -442 787.0 -395.5Q753 -349 753 -267Q753 -184 787.0 -138.0Q821 -92 883 -92Z"/><path style="--i:2" d="M1141 0 1333 -272 1148 -534H1287L1409 -352L1529 -534H1670L1486 -271L1677 0H1538L1411 -192L1283 0Z"/></svg></a>
+    <a class="nav-gh" href="https://github.com/chxperiments/bluebox" aria-label="box on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75-2.188-.203-.515-.172-1.609.063-2.062.625-.078 1.468.25 1.968.703.594-.187 1.219-.281 1.985-.281.765 0 1.39.094 1.953.265.484-.437 1.344-.765 1.969-.687.218.422.25 1.515.046 2.047.5.593.766 1.39.766 2.203 0 1.922-1.453 3.375-3.547 3.64.531.344.89 1.094.89 1.954v1.625c0 .468.391.734.86.547C13.781 14.359 16 11.53 16 8.03 16 3.61 12.406 0 7.984 0 3.563 0 0 3.61 0 8.031a7.88 7.88 0 0 0 5.172 7.422c.422.156.828-.125.828-.547v-1.25c-.219.094-.5.156-.75.156-1.031 0-1.64-.562-2.078-1.609-.172-.422-.36-.672-.719-.719-.187-.015-.25-.093-.25-.187 0-.188.313-.328.625-.328.453 0 .844.281 1.25.86.313.452.64.655 1.031.655s.641-.14 1-.5c.266-.265.47-.5.657-.656"/></svg></a>
   </div>
   <nav class="nav-links nav-right" aria-label="Architecture and docs">
     <a href="architecture.html">Architecture</a>
@@ -46,7 +46,7 @@
     <a href="#install">Install</a>
     <a href="#quickstart">Quick start</a>
     <p>Reference</p>
-    <a href="#bluefile">Bluefile</a>
+    <a href="#boxfile">Boxfile</a>
     <a href="#cli">CLI</a>
     <a href="#sdk">SDKs</a>
     <a href="#sdk-exec">exec and run</a>
@@ -59,22 +59,22 @@
 
   <article class="doc">
     <h2 id="install">Install</h2>
-    <p>bluebox needs Linux with KVM (or macOS with a podman machine), podman, and crun built with libkrun. The firecracker backend downloads a pinned Firecracker and guest kernel on first use and verifies their SHA-256.</p>
+    <p>box needs Linux with KVM (or macOS with a podman machine), podman, and crun built with libkrun. The firecracker backend downloads a pinned Firecracker and guest kernel on first use and verifies their SHA-256.</p>
     <pre class="code">curl -fsSL https://chxperiments.github.io/bluebox/install.sh | sh
-bluebox doctor          <span class="c"># checks podman, KVM, krun, subordinate UIDs; prints a fix for each failure</span></pre>
+box doctor          <span class="c"># checks podman, KVM, krun, subordinate UIDs; prints a fix for each failure</span></pre>
 
     <h2 id="quickstart">Quick start</h2>
-    <pre class="code">bluebox new agent --from tiny-python    <span class="c"># a ~60 MB Python sandbox</span>
-bluebox build agent                     <span class="c"># builds, then proves it has its own kernel</span>
-bluebox run agent -- python3 -c 'print(6*7)'
+    <pre class="code">box new agent --from tiny-python    <span class="c"># a ~60 MB Python sandbox</span>
+box build agent                     <span class="c"># builds, then proves it has its own kernel</span>
+box run agent -- python3 -c 'print(6*7)'
 
-bluebox up agent                        <span class="c"># keep one VM running</span>
-bluebox exec agent -- pip list
-bluebox down agent</pre>
-    <div class="note"><p>For agents, add <code>isolation: strict</code> to the Bluefile. The <code>tiny-python</code>, <code>tiny-node</code> and <code>ai-agent</code> examples already have it.</p></div>
+box up agent                        <span class="c"># keep one VM running</span>
+box exec agent -- pip list
+box down agent</pre>
+    <div class="note"><p>For agents, add <code>isolation: strict</code> to the Boxfile. The <code>tiny-python</code>, <code>tiny-node</code> and <code>ai-agent</code> examples already have it.</p></div>
 
-    <h2 id="bluefile">Bluefile</h2>
-    <p>One YAML file per sandbox at <code>~/.bluebox/sandboxes/&lt;name&gt;/Bluefile</code>. Unknown keys are rejected, so a typo fails loudly.</p>
+    <h2 id="boxfile">Boxfile</h2>
+    <p>One YAML file per sandbox at <code>~/.box/sandboxes/&lt;name&gt;/Boxfile</code>. Unknown keys are rejected, so a typo fails loudly.</p>
     <div class="table-wrap build"><table>
       <thead><tr><th>Field</th><th>Values</th><th>Default</th><th>Meaning</th></tr></thead>
       <tbody><tr><td class="mono">base</td><td>image reference</td><td class="mono">alpine:latest</td><td>The image every VM starts from.</td></tr><tr><td class="mono">backend</td><td>podman, krun, firecracker</td><td class="mono">podman</td><td>What boots the VM. See Architecture.</td></tr><tr><td class="mono">isolation</td><td>standard, strict</td><td class="mono">standard</td><td>strict runs the VMM as a subordinate UID.</td></tr><tr><td class="mono">cpus</td><td>1 to 16</td><td class="mono">2</td><td>vCPUs.</td></tr><tr><td class="mono">ram_mib</td><td>128 and up</td><td class="mono">2048</td><td>Guest RAM in MiB.</td></tr><tr><td class="mono">network</td><td>bridge, none</td><td class="mono">bridge</td><td>Internet access, or none at all.</td></tr><tr><td class="mono">readonly</td><td>bool</td><td class="mono">false</td><td>Read-only root; /tmp and /data stay writable.</td></tr><tr><td class="mono">timeout_seconds</td><td>int</td><td class="mono">0</td><td>Per-command limit; exits 124. 0 is unlimited.</td></tr><tr><td class="mono">warm</td><td>0 to 8</td><td class="mono">0</td><td>VMs kept booted for run (podman, krun).</td></tr><tr><td class="mono">warmup</td><td>shell lines</td><td class="mono"></td><td>Run once in each warm VM before it serves a run.</td></tr><tr><td class="mono">packages</td><td>names</td><td class="mono"></td><td>Installed with the image's package manager.</td></tr><tr><td class="mono">run</td><td>shell lines</td><td class="mono"></td><td>Extra build steps.</td></tr><tr><td class="mono">env</td><td>map</td><td class="mono"></td><td>Environment for every command.</td></tr><tr><td class="mono">mounts</td><td>host, guest, mode</td><td class="mono"></td><td>Host directories shared in (podman, krun); ro by default.</td></tr><tr><td class="mono">blueprint</td><td>users, write_files, runcmd</td><td class="mono"></td><td>Provisioning applied at build time.</td></tr><tr><td class="mono">pkgmgr</td><td>apk, apt, dnf</td><td class="mono">inferred</td><td>Override the package manager.</td></tr><tr><td class="mono">passt</td><td>bool</td><td class="mono">false</td><td>A real NIC with a default route (podman, krun).</td></tr><tr><td class="mono">seccomp</td><td>path</td><td class="mono"></td><td>A seccomp profile for the VMM.</td></tr></tbody>
@@ -83,22 +83,22 @@ bluebox down agent</pre>
     <h2 id="cli">CLI</h2>
     <div class="table-wrap build"><table>
       <thead><tr><th>Command</th><th>What it does</th></tr></thead>
-      <tbody><tr><td class="mono">bluebox new &lt;name&gt; [--from example]</td><td>Create a sandbox, optionally from a shipped example</td></tr><tr><td class="mono">bluebox build &lt;name&gt;</td><td>Build the image and prove the sandbox has its own kernel</td></tr><tr><td class="mono">bluebox run &lt;name&gt; -- &lt;cmd&gt;</td><td>Run one command in a fresh VM</td></tr><tr><td class="mono">bluebox up / down &lt;name&gt;</td><td>Keep a VM running, or stop it</td></tr><tr><td class="mono">bluebox exec &lt;name&gt; -- &lt;cmd&gt;</td><td>Run in the running VM; state carries over</td></tr><tr><td class="mono">bluebox shell &lt;name&gt;</td><td>Interactive session</td></tr><tr><td class="mono">bluebox fork &lt;name&gt; &lt;fork&gt;</td><td>Branch /data</td></tr><tr><td class="mono">bluebox diff / apply / discard &lt;fork&gt;</td><td>Review, merge or drop a fork's changes</td></tr><tr><td class="mono">bluebox data import / export &lt;name&gt; &lt;dir&gt;</td><td>Move files into or out of /data</td></tr><tr><td class="mono">bluebox snapshot / restore &lt;name&gt; [label]</td><td>Archive /data and roll back</td></tr><tr><td class="mono">bluebox reset &lt;name&gt;</td><td>Empty /data</td></tr><tr><td class="mono">bluebox serve</td><td>The local API the SDKs use</td></tr><tr><td class="mono">bluebox doctor</td><td>Check the host setup, with a fix for each failure</td></tr><tr><td class="mono">bluebox ls, env, logs, verify</td><td>Inspect sandboxes</td></tr><tr><td class="mono">bluebox rename, destroy, nuke</td><td>Remove or rename</td></tr></tbody>
+      <tbody><tr><td class="mono">box new &lt;name&gt; [--from example]</td><td>Create a sandbox, optionally from a shipped example</td></tr><tr><td class="mono">box build &lt;name&gt;</td><td>Build the image and prove the sandbox has its own kernel</td></tr><tr><td class="mono">box run &lt;name&gt; -- &lt;cmd&gt;</td><td>Run one command in a fresh VM</td></tr><tr><td class="mono">box up / down &lt;name&gt;</td><td>Keep a VM running, or stop it</td></tr><tr><td class="mono">box exec &lt;name&gt; -- &lt;cmd&gt;</td><td>Run in the running VM; state carries over</td></tr><tr><td class="mono">box shell &lt;name&gt;</td><td>Interactive session</td></tr><tr><td class="mono">box fork &lt;name&gt; &lt;fork&gt;</td><td>Branch /data</td></tr><tr><td class="mono">box diff / apply / discard &lt;fork&gt;</td><td>Review, merge or drop a fork's changes</td></tr><tr><td class="mono">box data import / export &lt;name&gt; &lt;dir&gt;</td><td>Move files into or out of /data</td></tr><tr><td class="mono">box snapshot / restore &lt;name&gt; [label]</td><td>Archive /data and roll back</td></tr><tr><td class="mono">box reset &lt;name&gt;</td><td>Empty /data</td></tr><tr><td class="mono">box serve</td><td>The local API the SDKs use</td></tr><tr><td class="mono">box doctor</td><td>Check the host setup, with a fix for each failure</td></tr><tr><td class="mono">box ls, env, logs, verify</td><td>Inspect sandboxes</td></tr><tr><td class="mono">box rename, destroy, nuke</td><td>Remove or rename</td></tr></tbody>
     </table></div>
 
     <h2 id="sdk">SDKs</h2>
-    <p>Python, TypeScript, Go and Rust. Each talks to <code>bluebox serve</code> over a Unix socket only your user can open, and starts it when nothing is listening. Pick a language once; every sample on this page follows.</p>
+    <p>Python, TypeScript, Go and Rust. Each talks to <code>box serve</code> over a Unix socket only your user can open, and starts it when nothing is listening. Pick a language once; every sample on this page follows.</p>
     <div class="codebox" data-lang-group="api-install">
   <div class="codebox-bar" role="tablist" aria-label="SDK language"><button class="tab" role="tab" data-lang="py" aria-selected="true" tabindex="0">Python</button><button class="tab" role="tab" data-lang="ts" aria-selected="false" tabindex="-1">TypeScript</button><button class="tab" role="tab" data-lang="go" aria-selected="false" tabindex="-1">Go</button><button class="tab" role="tab" data-lang="rs" aria-selected="false" tabindex="-1">Rust</button><button class="copy" type="button" data-copy-from>Copy</button></div>
-  <pre class="code" data-lang-panel="py">pip install ./sdk/python          <span class="c"># from a bluebox checkout</span>
+  <pre class="code" data-lang-panel="py">pip install ./sdk/python          <span class="c"># from a box checkout</span>
 
-from bluebox import Client, Sandbox</pre><pre class="code" data-lang-panel="ts" hidden>npm install ./sdk/typescript      <span class="c">// from a bluebox checkout</span>
+from sdbox import Client, Sandbox</pre><pre class="code" data-lang-panel="ts" hidden>npm install ./sdk/typescript      <span class="c">// from a box checkout</span>
 
-import { Client, Sandbox } from "bluebox-sdk";</pre><pre class="code" data-lang-panel="go" hidden>go get github.com/chxperiments/bluebox/sdk/go
+import { Client, Sandbox } from "box-sdk";</pre><pre class="code" data-lang-panel="go" hidden>go get github.com/chxperiments/bluebox/sdk/go
 
-import "github.com/chxperiments/bluebox/sdk/go"</pre><pre class="code" data-lang-panel="rs" hidden>cargo add --git https://github.com/chxperiments/bluebox bluebox-sdk
+import "github.com/chxperiments/bluebox/sdk/go"</pre><pre class="code" data-lang-panel="rs" hidden>cargo add --git https://github.com/chxperiments/bluebox sdbox
 
-use bluebox::{Client, Command, Sandbox};</pre>
+use sdbox::{Client, Command, Sandbox};</pre>
 </div>
 
     <h3 id="sdk-up">up and down</h3>
@@ -120,7 +120,7 @@ await sb.down();
 <span class="c">// or</span>
 await sb.withUp(async (sb) =&gt; {
   ...
-});</pre><pre class="code" data-lang-panel="go" hidden>sb := bluebox.New().Sandbox("agent")
+});</pre><pre class="code" data-lang-panel="go" hidden>sb := box.New().Sandbox("agent")
 if err := sb.Up(ctx); err != nil {
 	return err
 }
@@ -142,11 +142,11 @@ r = Sandbox("agent").run("pytest -q")</pre><pre class="code" data-lang-panel="ts
 r = await sb.exec("ls -la | head", { timeout: 10 });
 r = await sb.exec("wc -c", { stdin: Buffer.from("bytes") });
 
-r = await new Sandbox("agent").run("pytest -q");</pre><pre class="code" data-lang-panel="go" hidden>r, err := sb.Exec(ctx, bluebox.Cmd("python3", "-c", "print(6*7)"))
-r, err = sb.Exec(ctx, bluebox.Command{
+r = await new Sandbox("agent").run("pytest -q");</pre><pre class="code" data-lang-panel="go" hidden>r, err := sb.Exec(ctx, box.Cmd("python3", "-c", "print(6*7)"))
+r, err = sb.Exec(ctx, box.Command{
 	Argv: []string{"sh", "-c", "ls -la | head"}, Timeout: 10 * time.Second})
 
-r, err = sb.Run(ctx, bluebox.Sh("pytest -q"))</pre><pre class="code" data-lang-panel="rs" hidden>let r = sb.exec(Command::new(["python3", "-c", "print(6*7)"]))?;
+r, err = sb.Run(ctx, box.Sh("pytest -q"))</pre><pre class="code" data-lang-panel="rs" hidden>let r = sb.exec(Command::new(["python3", "-c", "print(6*7)"]))?;
 let r = sb.exec(Command::sh("ls -la | head").timeout(10))?;
 let r = sb.exec(Command::new(["wc", "-c"]).stdin(b"bytes".to_vec()))?;
 
@@ -154,7 +154,7 @@ let r = Sandbox::new("agent")?.run("pytest -q")?;</pre>
 </div>
 
     <h3 id="sdk-files">Files</h3>
-    <p>Reads and writes happen inside the guest, so a path or symlink the sandbox controls can never redirect them onto a host file. For bulk moves, use <code>bluebox data import</code> and <code>export</code>.</p>
+    <p>Reads and writes happen inside the guest, so a path or symlink the sandbox controls can never redirect them onto a host file. For bulk moves, use <code>box data import</code> and <code>export</code>.</p>
     <div class="codebox" data-lang-group="api-files">
   <div class="codebox-bar" role="tablist" aria-label="SDK language"><button class="tab" role="tab" data-lang="py" aria-selected="true" tabindex="0">Python</button><button class="tab" role="tab" data-lang="ts" aria-selected="false" tabindex="-1">TypeScript</button><button class="tab" role="tab" data-lang="go" aria-selected="false" tabindex="-1">Go</button><button class="tab" role="tab" data-lang="rs" aria-selected="false" tabindex="-1">Rust</button><button class="copy" type="button" data-copy-from>Copy</button></div>
   <pre class="code" data-lang-panel="py">sb.write_file("/data/task.py", "print(1)")
@@ -183,8 +183,8 @@ else:
 for (const ch of await trial.diff()) console.log(ch.kind, ch.path);
 
 if (testsPass) await trial.apply();
-else await trial.discard();</pre><pre class="code" data-lang-panel="go" hidden>trial, err := bluebox.New().Sandbox("agent").Fork(ctx, "trial")
-trial.Run(ctx, bluebox.Sh("python3 refactor.py"))
+else await trial.discard();</pre><pre class="code" data-lang-panel="go" hidden>trial, err := box.New().Sandbox("agent").Fork(ctx, "trial")
+trial.Run(ctx, box.Sh("python3 refactor.py"))
 
 changes, _ := trial.Diff(ctx)
 for _, ch := range changes {
@@ -212,16 +212,16 @@ r.exit_code, r.stdout, r.stderr, r.duration_ms, r.timed_out
 r.ok; r.stdout_text
 r.check()               <span class="c"># raises CommandFailed on a non-zero exit</span>
 
-from bluebox import NotFound, NotUp, BlueboxError</pre><pre class="code" data-lang-panel="ts" hidden>const r = await sb.exec("make test");
+from sdbox import NotFound, NotUp, BoxError</pre><pre class="code" data-lang-panel="ts" hidden>const r = await sb.exec("make test");
 r.exitCode; r.stdout; r.stderr; r.durationMs; r.timedOut;
 r.ok; r.stdoutText;
 r.check();              <span class="c">// throws CommandFailed on a non-zero exit</span>
 
-import { NotFound, NotUp, BlueboxError } from "bluebox-sdk";</pre><pre class="code" data-lang-panel="go" hidden>r, err := sb.Exec(ctx, bluebox.Sh("make test"))
+import { NotFound, NotUp, BoxError } from "box-sdk";</pre><pre class="code" data-lang-panel="go" hidden>r, err := sb.Exec(ctx, box.Sh("make test"))
 r.ExitCode; r.Stdout; r.Stderr; r.Duration; r.TimedOut
 r.OK()
 
-bluebox.IsNotFound(err); bluebox.IsNotUp(err)</pre><pre class="code" data-lang-panel="rs" hidden>let r = sb.exec("make test")?;
+box.IsNotFound(err); box.IsNotUp(err)</pre><pre class="code" data-lang-panel="rs" hidden>let r = sb.exec("make test")?;
 r.exit_code; r.stdout; r.stderr; r.duration_ms; r.timed_out;
 r.ok(); r.stdout_text();
 let r = r.check()?;      <span class="c">// Error::CommandFailed on a non-zero exit</span>
@@ -230,9 +230,9 @@ match err { Error::NotFound(_) | Error::NotUp(_) => {}, _ => {} }</pre>
 </div>
 
     <h2 id="mcp">MCP for agents</h2>
-    <p><code>bluebox mcp</code> serves bluebox over the Model Context Protocol on stdin and stdout, so an agent in Claude Code, Claude Desktop, Cursor or any MCP client can run code in your sandboxes. Every tool goes through the same handler as the local API, with the same checks. Sandboxes are still created and built by you, on the CLI.</p>
-    <pre class="code">claude mcp add bluebox -- bluebox mcp</pre>
-    <pre class="code">{ "mcpServers": { "bluebox": { "command": "bluebox", "args": ["mcp"] } } }</pre>
+    <p><code>box mcp</code> serves box over the Model Context Protocol on stdin and stdout, so an agent in Claude Code, Claude Desktop, Cursor or any MCP client can run code in your sandboxes. Every tool goes through the same handler as the local API, with the same checks. Sandboxes are still created and built by you, on the CLI.</p>
+    <pre class="code">claude mcp add box -- box mcp</pre>
+    <pre class="code">{ "mcpServers": { "box": { "command": "box", "args": ["mcp"] } } }</pre>
     <div class="table-wrap build"><table>
       <thead><tr><th>Tool</th><th>What it does</th></tr></thead>
       <tbody>
@@ -246,7 +246,7 @@ match err { Error::NotFound(_) | Error::NotUp(_) => {}, _ => {} }</pre>
     <div class="note"><p><b><code>apply</code> is not offered to agents</b> unless you start the server with <code>--allow-apply</code>. A fork exists so that you review an agent's work before it reaches real data; an agent that could apply its own fork would skip that.</p></div>
 
     <h2 id="api">Local API</h2>
-    <p>HTTP with JSON bodies on <code>~/.bluebox/bluebox.sock</code>, owner-only. <code>stdout</code>, <code>stderr</code> and <code>stdin</code> are base64. The SDKs are thin clients of this.</p>
+    <p>HTTP with JSON bodies on <code>~/.box/box.sock</code>, owner-only. <code>stdout</code>, <code>stderr</code> and <code>stdin</code> are base64. The SDKs are thin clients of this.</p>
     <div class="table-wrap build"><table>
       <thead><tr><th>Method</th><th>Path</th><th>Body or result</th></tr></thead>
       <tbody><tr><td class="mono">GET</td><td class="mono">/v1/version</td><td></td></tr><tr><td class="mono">GET</td><td class="mono">/v1/sandboxes</td><td>name, up, warm, warm_target, network, base</td></tr><tr><td class="mono">POST</td><td class="mono">/v1/sandboxes/{name}/up</td><td></td></tr><tr><td class="mono">POST</td><td class="mono">/v1/sandboxes/{name}/down</td><td></td></tr><tr><td class="mono">POST</td><td class="mono">/v1/sandboxes/{name}/exec</td><td>argv, stdin (base64), timeout_seconds</td></tr><tr><td class="mono">POST</td><td class="mono">/v1/sandboxes/{name}/run</td><td>same, in a fresh VM</td></tr><tr><td class="mono">POST</td><td class="mono">/v1/sandboxes/{name}/fork</td><td>as</td></tr><tr><td class="mono">GET</td><td class="mono">/v1/sandboxes/{name}/diff</td><td>returns changes: [kind, path]</td></tr><tr><td class="mono">POST</td><td class="mono">/v1/sandboxes/{name}/apply</td><td>returns changes: n</td></tr><tr><td class="mono">POST</td><td class="mono">/v1/sandboxes/{name}/discard</td><td>returns changes: n</td></tr></tbody>
@@ -289,7 +289,7 @@ match err { Error::NotFound(_) | Error::NotUp(_) => {}, _ => {} }</pre>
         <a href="https://github.com/chxperiments/bluebox/tree/main/examples">Examples</a>
       </nav>
     </div>
-    <div class="wordmark" aria-hidden="true"><svg viewBox="40 -740 3620 782"><path pathLength="1" style="--i:0" d="M357 12Q301 12 259.5 -12.0Q218 -36 195 -79L192 0H70V-710H198V-458Q220 -495 261.0 -520.5Q302 -546 357 -546Q426 -546 476.5 -511.5Q527 -477 554.5 -414.5Q582 -352 582 -267Q582 -182 554.5 -119.5Q527 -57 476.5 -22.5Q426 12 357 12ZM328 -92Q383 -92 416.0 -138.5Q449 -185 449 -267Q449 -350 416.5 -396.0Q384 -442 329 -442Q288 -442 258.5 -421.5Q229 -401 213.5 -362.0Q198 -323 198 -267Q198 -213 213.5 -173.5Q229 -134 258.0 -113.0Q287 -92 328 -92Z"/><path pathLength="1" style="--i:1" d="M784 0Q726 0 691.0 -30.0Q656 -60 656 -126V-710H784V-139Q784 -119 794.5 -109.0Q805 -99 824 -99H863V0Z"/><path pathLength="1" style="--i:2" d="M1091 12Q1010 12 962.5 -41.5Q915 -95 915 -190V-534H1043V-222Q1043 -155 1065.5 -123.5Q1088 -92 1134 -92Q1186 -92 1214.5 -126.5Q1243 -161 1243 -227V-534H1371V0H1254L1252 -87Q1237 -51 1210 -27Q1165 12 1091 12Z"/><path pathLength="1" style="--i:3" d="M1703 12Q1623 12 1564.0 -22.5Q1505 -57 1473.0 -120.0Q1441 -183 1441 -267Q1441 -351 1473.0 -413.5Q1505 -476 1563.5 -511.0Q1622 -546 1700 -546Q1776 -546 1833.5 -512.0Q1891 -478 1922.0 -414.0Q1953 -350 1953 -260V-231H1574Q1578 -161 1612.5 -125.5Q1647 -90 1704 -90Q1747 -90 1775.5 -109.5Q1804 -129 1815 -164L1946 -156Q1924 -78 1859.5 -33.0Q1795 12 1703 12ZM1574 -317H1821Q1817 -382 1784.0 -413.5Q1751 -445 1700 -445Q1649 -445 1615.5 -412.0Q1582 -379 1574 -317Z"/><path pathLength="1" style="--i:4" d="M2310 12Q2254 12 2212.5 -12.0Q2171 -36 2148 -79L2145 0H2023V-710H2151V-458Q2173 -495 2214.0 -520.5Q2255 -546 2310 -546Q2379 -546 2429.5 -511.5Q2480 -477 2507.5 -414.5Q2535 -352 2535 -267Q2535 -182 2507.5 -119.5Q2480 -57 2429.5 -22.5Q2379 12 2310 12ZM2281 -92Q2336 -92 2369.0 -138.5Q2402 -185 2402 -267Q2402 -350 2369.5 -396.0Q2337 -442 2282 -442Q2241 -442 2211.5 -421.5Q2182 -401 2166.5 -362.0Q2151 -323 2151 -267Q2151 -213 2166.5 -173.5Q2182 -134 2211.0 -113.0Q2240 -92 2281 -92Z"/><path pathLength="1" style="--i:5" d="M2836 12Q2757 12 2697.5 -22.5Q2638 -57 2605.5 -120.0Q2573 -183 2573 -267Q2573 -352 2605.5 -414.5Q2638 -477 2697.5 -511.5Q2757 -546 2836 -546Q2915 -546 2974.0 -511.5Q3033 -477 3065.5 -414.5Q3098 -352 3098 -267Q3098 -183 3065.5 -120.0Q3033 -57 2974.0 -22.5Q2915 12 2836 12ZM2836 -92Q2898 -92 2931.5 -138.0Q2965 -184 2965 -267Q2965 -349 2931.5 -395.5Q2898 -442 2836 -442Q2774 -442 2740.0 -395.5Q2706 -349 2706 -267Q2706 -184 2740.0 -138.0Q2774 -92 2836 -92Z"/><path pathLength="1" style="--i:6" d="M3094 0 3286 -272 3101 -534H3240L3362 -352L3482 -534H3623L3439 -271L3630 0H3491L3364 -192L3236 0Z"/></svg></div>
+    <div class="wordmark" aria-hidden="true"><svg viewBox="40 -740 1667 782"><path pathLength="1" style="--i:0" d="M357 12Q301 12 259.5 -12.0Q218 -36 195 -79L192 0H70V-710H198V-458Q220 -495 261.0 -520.5Q302 -546 357 -546Q426 -546 476.5 -511.5Q527 -477 554.5 -414.5Q582 -352 582 -267Q582 -182 554.5 -119.5Q527 -57 476.5 -22.5Q426 12 357 12ZM328 -92Q383 -92 416.0 -138.5Q449 -185 449 -267Q449 -350 416.5 -396.0Q384 -442 329 -442Q288 -442 258.5 -421.5Q229 -401 213.5 -362.0Q198 -323 198 -267Q198 -213 213.5 -173.5Q229 -134 258.0 -113.0Q287 -92 328 -92Z"/><path pathLength="1" style="--i:1" d="M883 12Q804 12 744.5 -22.5Q685 -57 652.5 -120.0Q620 -183 620 -267Q620 -352 652.5 -414.5Q685 -477 744.5 -511.5Q804 -546 883 -546Q962 -546 1021.0 -511.5Q1080 -477 1112.5 -414.5Q1145 -352 1145 -267Q1145 -183 1112.5 -120.0Q1080 -57 1021.0 -22.5Q962 12 883 12ZM883 -92Q945 -92 978.5 -138.0Q1012 -184 1012 -267Q1012 -349 978.5 -395.5Q945 -442 883 -442Q821 -442 787.0 -395.5Q753 -349 753 -267Q753 -184 787.0 -138.0Q821 -92 883 -92Z"/><path pathLength="1" style="--i:2" d="M1141 0 1333 -272 1148 -534H1287L1409 -352L1529 -534H1670L1486 -271L1677 0H1538L1411 -192L1283 0Z"/></svg></div>
     <div class="footer-base">
       <span>MIT licensed. Isolated, disposable microVM sandboxes.</span>
       <a href="#top">Back to top</a>

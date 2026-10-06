@@ -15,24 +15,19 @@ GH_MARK = ("M6.766 11.328c-2.063-.25-3.516-1.734-3.516-3.656 0-.781.281-1.625.75
 
 
 def logo():
-    """The bluebox wordmark, set in Geist SemiBold and stored as outlines
-    (docs/assets/bluebox-wordmark.svg), one path per letter so each can
-    move on its own. Solid for the nav rail, hollow and drawn in for the footer."""
+    """The box wordmark, set in Geist SemiBold and stored as outlines
+    (docs/assets/box-wordmark.svg), one path per letter so each can
+    move on its own. Solid for the nav, hollow and drawn in for the footer."""
     import re
     from pathlib import Path
-    svg = (Path(__file__).resolve().parents[2] / "docs/assets/bluebox-wordmark.svg").read_text()
+    svg = (Path(__file__).resolve().parents[2] / "docs/assets/box-wordmark.svg").read_text()
     vb = re.search(r'viewBox="([^"]+)"', svg).group(1)
     letters = re.findall(r' d="([^"]+)"', svg)
     x, y, w, h = (float(v) for v in vb.split())
     nav = "".join(f'<path style="--i:{i}" d="{d}"/>' for i, d in enumerate(letters))
     foot = "".join(f'<path pathLength="1" style="--i:{i}" d="{d}"/>' for i, d in enumerate(letters))
     pad = 30
-    # The rail shows the word reading upward: the same letters turned a
-    # quarter, with the viewBox turned to match. The top bar on small
-    # screens shows it level.
-    vert = f'{y:.0f} {-(x + w):.0f} {h:.0f} {w:.0f}'
-    return (f'<svg class="logo logo-v" viewBox="{vert}" aria-hidden="true"><g transform="rotate(-90)">{nav}</g></svg>'
-            f'<svg class="logo logo-h" viewBox="{vb}" aria-hidden="true">{nav}</svg>',
+    return (f'<svg class="logo" viewBox="{vb}" aria-hidden="true">{nav}</svg>',
             f'<svg viewBox="{x - pad:.0f} {y - pad:.0f} {w + 2 * pad:.0f} {h + 2 * pad:.0f}">{foot}</svg>')
 
 
@@ -44,7 +39,7 @@ def page(filename, title, description, body):
             for f, t in PAGES if f in files
         )
     left, right = links("security.html", "benchmarks.html"), links("architecture.html", "docs.html")
-    full_title = "bluebox" if filename == "index.html" else f"{title} | bluebox"
+    full_title = "box" if filename == "index.html" else f"{title} | box"
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -54,7 +49,7 @@ def page(filename, title, description, body):
 <meta name="description" content="{html.escape(description)}">
 <meta property="og:title" content="{full_title}">
 <meta property="og:description" content="{html.escape(description)}">
-<meta name="theme-color" content="#1300f9">
+<meta name="theme-color" content="#000000">
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
@@ -69,8 +64,8 @@ def page(filename, title, description, body):
 {left}
   </nav>
   <div class="nav-mid">
-    <a class="brand" href="index.html" aria-label="bluebox, home">{LOGO}</a>
-    <a class="nav-gh" href="{GH}" aria-label="bluebox on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="{GH_MARK}"/></svg></a>
+    <a class="brand" href="index.html" aria-label="box, home">{LOGO}</a>
+    <a class="nav-gh" href="{GH}" aria-label="box on GitHub"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="{GH_MARK}"/></svg></a>
   </div>
   <nav class="nav-links nav-right" aria-label="Architecture and docs">
 {right}
