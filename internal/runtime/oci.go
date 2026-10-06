@@ -11,12 +11,12 @@ import (
 	"strconv"
 	"strings"
 
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
-// The subset of the OCI runtime spec bluebox writes. Field names follow the
-// spec so the JSON is what crun expects; anything bluebox never sets is left
+// The subset of the OCI runtime spec box writes. Field names follow the
+// spec so the JSON is what crun expects; anything box never sets is left
 // out rather than modelled.
 
 type ociSpec struct {
@@ -132,7 +132,7 @@ type imageConfig struct {
 func cgroupsPath(vm string) string {
 	b := make([]byte, 4)
 	crand.Read(b)
-	return "user.slice:bluebox:" + vm + "-" + hex.EncodeToString(b)
+	return "user.slice:box:" + vm + "-" + hex.EncodeToString(b)
 }
 
 // vmmCapList is vmmCaps as the OCI spec wants it.
@@ -152,27 +152,27 @@ var (
 	ociReadonlyPaths = []string{"/proc/bus", "/proc/fs", "/proc/irq", "/proc/sys", "/proc/sysrq-trigger"}
 )
 
-// specInput is what krunSpec needs beyond the Bluefile.
+// specInput is what krunSpec needs beyond the Boxfile.
 type specInput struct {
 	Rootfs      string // the merged rootfs the VM boots from
 	Image       imageConfig
 	Launch      Launch
 	Hostname    string
 	EtcDir      string // holds resolv.conf, hosts, hostname for the guest
-	HookBinary  string // bluebox itself, run as the createRuntime hook
+	HookBinary  string // box itself, run as the createRuntime hook
 	HookLog     string // where the hook reports a failure
 	AgentPort   int    // host port forwarded to the agent, 0 for none
 	Interactive bool   // a terminal is attached
 }
 
 // krunSpec writes the OCI spec for one VM: the image's process as podman
-// would run it, the Bluefile's mounts, and the same confinement the podman
+// would run it, the Boxfile's mounts, and the same confinement the podman
 // backend asks podman for, stated directly.
-func krunSpec(name string, s bluefile.Spec, in specInput) ([]byte, error) {
+func krunSpec(name string, s boxfile.Spec, in specInput) ([]byte, error) {
 	argv := in.Launch.Argv
 	switch {
 	case in.Launch.Agent:
-		argv = []string{agentMount + "/bluebox", "__agent"}
+		argv = []string{agentMount + "/box", "__agent"}
 	case len(argv) == 0:
 		argv = append(append([]string{}, in.Image.Entrypoint...), in.Image.Cmd...)
 	case len(in.Image.Entrypoint) > 0:
@@ -317,7 +317,7 @@ func dataBind(name string) (ociMount, error) {
 }
 
 // parseUser reads an image's USER: a uid[:gid], or empty for root. Names
-// would need the image's /etc/passwd; bluebox's own images use numbers or
+// would need the image's /etc/passwd; box's own images use numbers or
 // nothing, and a name is refused rather than guessed.
 func parseUser(u string) (ociUser, error) {
 	if u == "" {
@@ -366,14 +366,14 @@ type seccompFilter struct {
 }
 
 // seccompProfile resolves the profile the podman backend gets by default --
-// or the Bluefile's own -- into the OCI form, for the VMM's six capabilities
+// or the Boxfile's own -- into the OCI form, for the VMM's six capabilities
 // and this architecture. The result is the same filter podman would install.
-func seccompProfile(s bluefile.Spec) (json.RawMessage, error) {
+func seccompProfile(s boxfile.Spec) (json.RawMessage, error) {
 	return seccompProfileFor(s, vmmCapList)
 }
 
 // seccompProfileFor resolves the profile for a process holding caps.
-func seccompProfileFor(s bluefile.Spec, caps []string) (json.RawMessage, error) {
+func seccompProfileFor(s boxfile.Spec, caps []string) (json.RawMessage, error) {
 	var path string
 	if s.Seccomp != "" {
 		path = s.Seccomp

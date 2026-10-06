@@ -10,14 +10,14 @@ import (
 	"path/filepath"
 	"strings"
 
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
 // A Firecracker image is a directory per built image and isolation mode:
 //
-//	~/.bluebox/firecracker/images/<name>/<image id>-s<shift>/
-//	  rootfs.ext4   the image's files, plus the bluebox agent as /.bluebox/bluebox
+//	~/.box/firecracker/images/<name>/<image id>-s<shift>/
+//	  rootfs.ext4   the image's files, plus the box agent as /.box/box
 //	  snap.state    a snapshot of a VM booted from it, paused once its agent answered
 //	  snap.mem      that VM's memory
 //	  token         the agent token baked into the snapshot (rotated on restore)
@@ -25,7 +25,7 @@ import (
 // Every run restores the snapshot: the kernel boot and the agent start are
 // paid once, at build, never per run.
 
-func fcImageDir(name string, s bluefile.Spec) (string, error) {
+func fcImageDir(name string, s boxfile.Spec) (string, error) {
 	id, err := imageID(name)
 	if err != nil {
 		return "", err
@@ -39,7 +39,7 @@ func fcImageDir(name string, s bluefile.Spec) (string, error) {
 		shift = 1
 	}
 	// The agent is baked into the root disk and the snapshot, so a new
-	// bluebox means a new image; the key includes its hash.
+	// box means a new image; the key includes its hash.
 	agentHash, err := selfHash()
 	if err != nil {
 		return "", err
@@ -48,7 +48,7 @@ func fcImageDir(name string, s bluefile.Spec) (string, error) {
 		fmt.Sprintf("%s-a%s-s%d-r%d-c%d-%s", id[:12], agentHash, shift, s.RAMMiB, s.CPUs, roFlag(s))), nil
 }
 
-func roFlag(s bluefile.Spec) string {
+func roFlag(s boxfile.Spec) string {
 	if s.ReadOnlyRootfs {
 		return "ro"
 	}
@@ -57,7 +57,7 @@ func roFlag(s bluefile.Spec) string {
 
 var selfHashCache string
 
-// selfHash is a short hash of the running bluebox binary.
+// selfHash is a short hash of the running box binary.
 func selfHash() (string, error) {
 	if selfHashCache != "" {
 		return selfHashCache, nil
@@ -81,7 +81,7 @@ func selfHash() (string, error) {
 
 // fcImage returns the image directory, building the root disk and the
 // snapshot first if this image has not been booted yet.
-func fcImage(name string, s bluefile.Spec) (string, error) {
+func fcImage(name string, s boxfile.Spec) (string, error) {
 	dir, err := fcImageDir(name, s)
 	if err != nil {
 		return "", err
@@ -105,8 +105,8 @@ func fcImage(name string, s bluefile.Spec) (string, error) {
 
 // fcRootfs writes rootfs.ext4: the image's files exported by podman and
 // written into an ext4 filesystem by the helper image, with the agent binary
-// and the image's environment added under /.bluebox.
-func fcRootfs(name string, s bluefile.Spec, dir string) error {
+// and the image's environment added under /.box.
+func fcRootfs(name string, s boxfile.Spec, dir string) error {
 	if err := fcTools(); err != nil {
 		return err
 	}
@@ -139,9 +139,9 @@ func fcRootfs(name string, s bluefile.Spec, dir string) error {
 	// guest, whose writes go to a RAM overlay.
 	script := `set -e
 mkdir /r && tar -C /r -xf -
-mkdir -p /r/.bluebox /r/.rw /r/.root /r/data
-cp /agent/bluebox /r/.bluebox/bluebox && chmod 0755 /r/.bluebox/bluebox
-cp /out/env /r/.bluebox/env
+mkdir -p /r/.box /r/.rw /r/.root /r/data
+cp /agent/box /r/.box/box && chmod 0755 /r/.box/box
+cp /out/env /r/.box/env
 size=$(( $(du -sm /r | cut -f1) * 13 / 10 + 64 ))
 mkfs.ext4 -q -F -L root -d /r /out/rootfs.ext4.partial ${size}M
 mv /out/rootfs.ext4.partial /out/rootfs.ext4`
@@ -201,7 +201,7 @@ func fcDataDisk(name string) (string, error) {
 
 // fcSnapshot boots the image once, waits for its agent, pauses it and
 // snapshots it into dir.
-func fcSnapshot(name string, s bluefile.Spec, dir string) error {
+func fcSnapshot(name string, s boxfile.Spec, dir string) error {
 	token, err := newToken()
 	if err != nil {
 		return err
@@ -218,7 +218,7 @@ func fcSnapshot(name string, s bluefile.Spec, dir string) error {
 		f.Close()
 	}
 	defer os.Remove(placeholder)
-	vm := "bluebox-snap-" + name
+	vm := "box-snap-" + name
 	cmd, err := fcLaunchCmd(fcRun{
 		Mode: "snapshot", Sandbox: name, VM: vm, Image: dir, Disk: placeholder,
 		CPUs: s.CPUs, RAMMiB: s.RAMMiB, Strict: s.Isolation == "strict",

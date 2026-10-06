@@ -18,10 +18,10 @@ var helpGroups = []struct{ id, label string }{
 }
 
 // rootHelp prints a compact overview: one usage line, then one line per
-// command. Detail lives behind `bluebox <command> -h`.
+// command. Detail lives behind `box <command> -h`.
 func rootHelp(c *cobra.Command) {
 	var b strings.Builder
-	b.WriteString("\n   usage: bluebox <command> [flags]\n\n")
+	b.WriteString("\n   usage: box <command> [flags]\n\n")
 
 	for _, g := range helpGroups {
 		label := g.label
@@ -33,7 +33,7 @@ func rootHelp(c *cobra.Command) {
 			label = "" // the group is named once, then indented under it
 		}
 	}
-	b.WriteString("\n   bluebox <command> -h   flags and detail\n")
+	b.WriteString("\n   box <command> -h   flags and detail\n")
 	fmt.Print(b.String())
 }
 

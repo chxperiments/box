@@ -33,8 +33,8 @@ import (
 	"syscall"
 	"time"
 
-	"bluebox/internal/runtime"
-	"bluebox/internal/sandbox"
+	"box/internal/runtime"
+	"box/internal/sandbox"
 )
 
 // MaxOutput caps what one command's stdout or stderr may buffer. Past it the
@@ -90,7 +90,7 @@ func Serve(sock, version string, idle time.Duration) error {
 				if s.inflight.Load() > 0 {
 					continue
 				}
-				// An upgraded bluebox must not be shadowed by the old one still
+				// An upgraded box must not be shadowed by the old one still
 				// serving: once idle, step aside and let the next SDK call
 				// start the new binary.
 				replaced := self != "" && exeIdentity() != self

@@ -12,26 +12,26 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bluebox/examples"
-	"bluebox/internal/bluefile"
-	"bluebox/internal/runtime"
-	"bluebox/internal/sandbox"
+	"box/examples"
+	"box/internal/boxfile"
+	"box/internal/runtime"
+	"box/internal/sandbox"
 )
 
 func newCmd() *cobra.Command {
 	var from string
 	c := &cobra.Command{
-		Use: "new <name>", Short: "write a Bluefile", GroupID: groupSandbox,
-		Long: "Creates a sandbox with a starter Bluefile.\n\n" +
+		Use: "new <name>", Short: "write a Boxfile", GroupID: groupSandbox,
+		Long: "Creates a sandbox with a starter Boxfile.\n\n" +
 			"--from starts from a shipped example instead; any files that come\n" +
 			"with it (a sample main.tf, say) are placed in its /data.\n" +
 			"Examples: " + strings.Join(examples.Names(), ", "),
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeNothing,
-		Example: "  bluebox new devbox\n" +
-			"  bluebox new agent --from tiny-python",
+		Example: "  box new devbox\n" +
+			"  box new agent --from tiny-python",
 		RunE: func(_ *cobra.Command, args []string) error {
-			content := []byte(bluefile.Template)
+			content := []byte(boxfile.Template)
 			var extras map[string][]byte
 			if from != "" {
 				var err error
@@ -42,7 +42,7 @@ func newCmd() *cobra.Command {
 			if _, err := sandbox.Create(args[0]); err != nil {
 				return err
 			}
-			path, err := sandbox.BluefilePath(args[0])
+			path, err := sandbox.BoxfilePath(args[0])
 			if err != nil {
 				return err
 			}
@@ -125,7 +125,7 @@ func verifyCmd() *cobra.Command {
 // kernel a plain container sees. Comparing against the host's own uname would
 // be wrong on macOS, where the host runs Darwin and any Linux container kernel
 // differs from it whether or not a microVM is involved.
-func verify(name string, s bluefile.Spec) error {
+func verify(name string, s boxfile.Spec) error {
 	guest, baseline, err := runtime.CheckIsolation(name, s)
 	if err != nil {
 		return err
@@ -141,7 +141,7 @@ func runCmd() *cobra.Command {
 		Use: "run <name> [command...]", Short: "one command, fresh microVM", GroupID: groupRun,
 		Args:              cobra.MinimumNArgs(2),
 		ValidArgsFunction: completeRunArgs,
-		Example:           "  bluebox run devbox -- python3 script.py",
+		Example:           "  box run devbox -- python3 script.py",
 		RunE: func(_ *cobra.Command, args []string) error {
 			name, argv := args[0], args[1:]
 			s, err := loadSpec(name)
@@ -183,7 +183,7 @@ func shellCmd() *cobra.Command {
 			if fresh, err := runtime.EnsureIsolated(args[0], s); err != nil {
 				return err
 			} else if fresh {
-				fmt.Fprintln(os.Stderr, "bluebox: re-verified isolation (runtime changed since last check)")
+				fmt.Fprintln(os.Stderr, "box: re-verified isolation (runtime changed since last check)")
 			}
 			if err := runtime.Shell(args[0], s); err != nil {
 				if code := runtime.ExitCode(err); code >= 0 {
@@ -214,7 +214,7 @@ func resetCmd() *cobra.Command {
 				return err
 			}
 			if sandbox.IsFork(name) {
-				return fmt.Errorf("%s is a fork; drop its changes with: bluebox discard %s", name, name)
+				return fmt.Errorf("%s is a fork; drop its changes with: box discard %s", name, name)
 			}
 			if err := refuseWithForks(name, "reset it"); err != nil {
 				return err
@@ -249,16 +249,16 @@ func snapshotCmd() *cobra.Command {
 	var list, yes bool
 	c := &cobra.Command{
 		Use: "snapshot <name> [label]", Short: "archive /data", GroupID: groupState,
-		Long: "Archives /data to ~/.bluebox/snapshots/<name>/.\n\n" +
+		Long: "Archives /data to ~/.box/snapshots/<name>/.\n\n" +
 			"With a label the archive is named for it instead of the time, so it\n" +
 			"can be restored by that name rather than by a timestamp you would\n" +
 			"have to look up. Reusing a label replaces that snapshot.\n\n" +
-			"Restore one with: bluebox restore <name> [snapshot]",
+			"Restore one with: box restore <name> [snapshot]",
 		Args:              cobra.RangeArgs(1, 2),
 		ValidArgsFunction: completeName, // the label is invented, not chosen
-		Example: "  bluebox snapshot devbox\n" +
-			"  bluebox snapshot devbox before-upgrade\n" +
-			"  bluebox restore devbox before-upgrade",
+		Example: "  box snapshot devbox\n" +
+			"  box snapshot devbox before-upgrade\n" +
+			"  box restore devbox before-upgrade",
 		RunE: func(_ *cobra.Command, args []string) error {
 			name := args[0]
 			if !sandbox.Exists(name) {
@@ -317,8 +317,8 @@ func restoreCmd() *cobra.Command {
 			"leaves the existing /data untouched.",
 		Args:              cobra.RangeArgs(1, 2),
 		ValidArgsFunction: completeSnapshot,
-		Example: "  bluebox restore devbox\n" +
-			"  bluebox restore devbox 20260823T150405Z",
+		Example: "  box restore devbox\n" +
+			"  box restore devbox 20260823T150405Z",
 		RunE: func(_ *cobra.Command, args []string) error {
 			name := args[0]
 			if !sandbox.Exists(name) {
@@ -370,13 +370,13 @@ func restoreCmd() *cobra.Command {
 func envCmd() *cobra.Command {
 	return &cobra.Command{
 		Use: "env <name>", Short: "settings as KEY=VALUE", GroupID: groupInspect,
-		Long: "Shell-consumable settings, for: eval \"$(bluebox env <name>)\"\n\n" +
+		Long: "Shell-consumable settings, for: eval \"$(box env <name>)\"\n\n" +
 			"Every value is single-quoted, so evaluating the output only assigns\n" +
-			"variables. The Bluefile's env entries are printed as BLUEBOX_ENV_<KEY>,\n" +
-			"so a Bluefile cannot overwrite PATH or anything else in your shell.",
+			"variables. The Boxfile's env entries are printed as BOX_ENV_<KEY>,\n" +
+			"so a Boxfile cannot overwrite PATH or anything else in your shell.",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeName,
-		Example:           "  eval \"$(bluebox env devbox)\"",
+		Example:           "  eval \"$(box env devbox)\"",
 		RunE: func(_ *cobra.Command, args []string) error {
 			name := args[0]
 			s, err := loadSpec(name)
@@ -392,28 +392,28 @@ func envCmd() *cobra.Command {
 	}
 }
 
-// envLines renders the settings printed by `bluebox env`. The output is
-// documented for eval, and base and env come from a Bluefile that may have
-// been written by someone else, so every value is quoted and the Bluefile's
-// keys are namespaced: evaluating the output assigns BLUEBOX_* variables and
+// envLines renders the settings printed by `box env`. The output is
+// documented for eval, and base and env come from a Boxfile that may have
+// been written by someone else, so every value is quoted and the Boxfile's
+// keys are namespaced: evaluating the output assigns BOX_* variables and
 // nothing else.
-func envLines(name, data string, s bluefile.Spec) []string {
+func envLines(name, data string, s boxfile.Spec) []string {
 	lines := []string{
-		"BLUEBOX_NAME=" + shellQuote(name),
-		"BLUEBOX_IMAGE=" + shellQuote(sandbox.ImageTag(name)),
-		"BLUEBOX_DATA=" + shellQuote(data),
-		"BLUEBOX_BASE=" + shellQuote(s.Base),
-		fmt.Sprintf("BLUEBOX_CPUS=%d", s.CPUs),
-		fmt.Sprintf("BLUEBOX_RAM_MIB=%d", s.RAMMiB),
-		"BLUEBOX_NETWORK=" + shellQuote(s.Network),
-		fmt.Sprintf("BLUEBOX_PASST=%t", s.Passt),
-		fmt.Sprintf("BLUEBOX_READONLY=%t", s.ReadOnlyRootfs),
-		fmt.Sprintf("BLUEBOX_TIMEOUT_SECONDS=%d", s.TimeoutSeconds),
+		"BOX_NAME=" + shellQuote(name),
+		"BOX_IMAGE=" + shellQuote(sandbox.ImageTag(name)),
+		"BOX_DATA=" + shellQuote(data),
+		"BOX_BASE=" + shellQuote(s.Base),
+		fmt.Sprintf("BOX_CPUS=%d", s.CPUs),
+		fmt.Sprintf("BOX_RAM_MIB=%d", s.RAMMiB),
+		"BOX_NETWORK=" + shellQuote(s.Network),
+		fmt.Sprintf("BOX_PASST=%t", s.Passt),
+		fmt.Sprintf("BOX_READONLY=%t", s.ReadOnlyRootfs),
+		fmt.Sprintf("BOX_TIMEOUT_SECONDS=%d", s.TimeoutSeconds),
 	}
 	// EnvKeys is sorted, and validate() has already held each key to an
 	// identifier, so the prefixed name is a valid shell variable.
 	for _, k := range s.EnvKeys() {
-		lines = append(lines, "BLUEBOX_ENV_"+k+"="+shellQuote(s.Env[k]))
+		lines = append(lines, "BOX_ENV_"+k+"="+shellQuote(s.Env[k]))
 	}
 	return lines
 }
@@ -594,10 +594,10 @@ func lsCmd() *cobra.Command {
 			fmt.Printf("%-14s %-12s %-5s %-7s %-7s %-6s %-8s %s\n",
 				"NAME", "STATE", "CPUS", "RAM", "NET", "RO", "TIMEOUT", "BASE")
 			for _, name := range names {
-				path, _ := sandbox.BluefilePath(name)
-				s, err := bluefile.Parse(path)
+				path, _ := sandbox.BoxfilePath(name)
+				s, err := boxfile.Parse(path)
 				if err != nil {
-					fmt.Printf("%-14s invalid Bluefile\n", name)
+					fmt.Printf("%-14s invalid Boxfile\n", name)
 					continue
 				}
 				timeout := "-"
@@ -659,17 +659,17 @@ func openEditor(path string) error {
 // nobody is there to answer -- /dev/null is a character device, so testing for
 // a terminal would wrongly accept it -- and guessing between two files that
 // behave this differently is worse than refusing.
-func chooseTarget() (bluefile bool, err error) {
-	fmt.Println("  1  Bluefile       the spec you edit")
+func chooseTarget() (boxfile bool, err error) {
+	fmt.Println("  1  Boxfile       the spec you edit")
 	fmt.Println("  2  Containerfile  generated, replaced by the next build")
 	fmt.Print("  choose [1]: ")
 	line, readErr := bufio.NewReader(os.Stdin).ReadString('\n')
 	if readErr != nil && strings.TrimSpace(line) == "" {
 		fmt.Println()
-		return false, fmt.Errorf("no answer; pass -b for the Bluefile or -c for the Containerfile")
+		return false, fmt.Errorf("no answer; pass -b for the Boxfile or -c for the Containerfile")
 	}
 	switch strings.TrimSpace(line) {
-	case "", "1", "b", "bluefile":
+	case "", "1", "b", "boxfile":
 		return true, nil
 	case "2", "c", "containerfile":
 		return false, nil
@@ -681,10 +681,10 @@ func chooseTarget() (bluefile bool, err error) {
 func editCmd() *cobra.Command {
 	var wantBlue, wantContainer bool
 	c := &cobra.Command{
-		Use: "edit <name>", Short: "edit the Bluefile or Containerfile", GroupID: groupSandbox,
+		Use: "edit <name>", Short: "edit the Boxfile or Containerfile", GroupID: groupSandbox,
 		Long: "Opens a sandbox's file in $VISUAL, $EDITOR, or vi.\n\n" +
-			"The Containerfile is generated from the Bluefile, so edits to it are\n" +
-			"replaced by the next build. Change the Bluefile to make them stick.",
+			"The Containerfile is generated from the Boxfile, so edits to it are\n" +
+			"replaced by the next build. Change the Boxfile to make them stick.",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeName,
 		RunE: func(_ *cobra.Command, args []string) error {
@@ -696,17 +696,17 @@ func editCmd() *cobra.Command {
 				return fmt.Errorf("pass -b or -c, not both")
 			}
 
-			editBluefile := wantBlue
+			editBoxfile := wantBlue
 			if !wantBlue && !wantContainer {
 				chosen, err := chooseTarget()
 				if err != nil {
 					return err
 				}
-				editBluefile = chosen
+				editBoxfile = chosen
 			}
 
-			if editBluefile {
-				path, err := sandbox.BluefilePath(name)
+			if editBoxfile {
+				path, err := sandbox.BoxfilePath(name)
 				if err != nil {
 					return err
 				}
@@ -714,10 +714,10 @@ func editCmd() *cobra.Command {
 					return err
 				}
 				// Catch a broken edit now rather than at the next build.
-				if _, err := bluefile.Parse(path); err != nil {
+				if _, err := boxfile.Parse(path); err != nil {
 					return fmt.Errorf("saved, but it no longer parses:\n%w", err)
 				}
-				fmt.Printf("ok — run: bluebox build %s\n", name)
+				fmt.Printf("ok — run: box build %s\n", name)
 				return nil
 			}
 
@@ -726,13 +726,13 @@ func editCmd() *cobra.Command {
 				return err
 			}
 			if _, err := os.Stat(path); err != nil {
-				return fmt.Errorf("no Containerfile yet; it is written by: bluebox build %s", name)
+				return fmt.Errorf("no Containerfile yet; it is written by: box build %s", name)
 			}
 			fmt.Println("note: generated file — the next build overwrites it")
 			return openEditor(path)
 		},
 	}
-	c.Flags().BoolVarP(&wantBlue, "bluefile", "b", false, "edit the Bluefile")
+	c.Flags().BoolVarP(&wantBlue, "boxfile", "b", false, "edit the Boxfile")
 	c.Flags().BoolVarP(&wantContainer, "containerfile", "c", false, "edit the generated Containerfile")
 	return c
 }

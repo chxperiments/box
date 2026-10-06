@@ -20,9 +20,9 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"bluebox/internal/agent"
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/agent"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
 // fcBackend boots sandboxes with the Firecracker VMM. Each image is booted
@@ -34,7 +34,7 @@ import (
 // installs its own per-thread filters -- the confinement Firecracker's jailer
 // gives, without the root the jailer needs. The agent is reached over vsock,
 // whose host side is a Unix socket in the VM's owner-only directory, so it
-// needs no network at all. /data is an ext4 disk per sandbox; `bluebox data
+// needs no network at all. /data is an ext4 disk per sandbox; `box data
 // export` and `import` move files in and out of it.
 type fcBackend struct{}
 
@@ -62,7 +62,7 @@ func (fcBackend) Preflight() error {
 	return nil
 }
 
-// fcRun is what one `bluebox __fc` invocation does, written to the VM
+// fcRun is what one `box __fc` invocation does, written to the VM
 // directory as run.json.
 type fcRun struct {
 	Mode      string            `json:"mode"` // snapshot | run | detach
@@ -80,10 +80,10 @@ type fcRun struct {
 	Token     string            `json:"token,omitempty"`      // detach mode: rotate to this
 	Timeout   int               `json:"timeout,omitempty"`
 	Labels    map[string]string `json:"labels,omitempty"`
-	Spec      bluefile.Spec     `json:"spec"`
+	Spec      boxfile.Spec      `json:"spec"`
 }
 
-func (b fcBackend) Launch(name string, s bluefile.Spec, l Launch) (*exec.Cmd, error) {
+func (b fcBackend) Launch(name string, s boxfile.Spec, l Launch) (*exec.Cmd, error) {
 	if l.Baseline {
 		// The isolation check's reference is a plain container of the
 		// image, which podman provides.
@@ -102,7 +102,7 @@ func (b fcBackend) Launch(name string, s bluefile.Spec, l Launch) (*exec.Cmd, er
 	}
 	vm := l.VM
 	if vm == "" {
-		vm = fmt.Sprintf("bluebox-%s-%d-%d", name, os.Getpid(), time.Now().UnixNano()%100000)
+		vm = fmt.Sprintf("box-%s-%d-%d", name, os.Getpid(), time.Now().UnixNano()%100000)
 	}
 	r := fcRun{
 		Mode: "run", Sandbox: name, VM: vm, Image: img, Disk: disk,
@@ -196,7 +196,7 @@ func fcCrunRoot() string {
 	if run == "" {
 		run = os.TempDir()
 	}
-	return filepath.Join(run, "bluebox", "fc")
+	return filepath.Join(run, "box", "fc")
 }
 
 // /data is a block device here, and an ext4 filesystem mounted by two VMs at
@@ -246,7 +246,7 @@ func fcAlive(vm string) bool {
 	return err == nil && unix.Kill(pid, 0) == nil
 }
 
-// RunFirecracker is `bluebox __fc <vm dir>`, run inside podman's namespace.
+// RunFirecracker is `box __fc <vm dir>`, run inside podman's namespace.
 func RunFirecracker(dir string) error {
 	if os.Getenv("_CONTAINERS_USERNS_CONFIGURED") == "" {
 		return errors.New("__fc runs inside podman's user namespace")
@@ -435,7 +435,7 @@ func fcSpec(r fcRun, dir, jail, binDir, binName, kernelDir string) ([]byte, erro
 		Version: "1.0.2",
 		Process: ociProcess{
 			User: ociUser{},
-			Args: []string{"/fc/" + binName, "--api-sock", "/vm/api.sock", "--id", "bluebox", "--level", "Warning"},
+			Args: []string{"/fc/" + binName, "--api-sock", "/vm/api.sock", "--id", "box", "--level", "Warning"},
 			Env:  []string{"PATH=/fc"},
 			Cwd:  "/vm",
 			Capabilities: ociCapabilities{
@@ -511,7 +511,7 @@ func fcBootAndSnapshot(api fcClient, dir string, r fcRun) error {
 		return err
 	}
 	args := fmt.Sprintf("console=ttyS0 reboot=k panic=1 pci=off ro root=/dev/vda rootfstype=ext4 quiet loglevel=1 "+
-		"init=/.bluebox/bluebox bluebox.token=%s bluebox.hostname=%s bluebox.ro=%s", r.BootToken, r.Sandbox, ro)
+		"init=/.box/box box.token=%s box.hostname=%s box.ro=%s", r.BootToken, r.Sandbox, ro)
 	steps := []struct {
 		method, path string
 		body         any
@@ -582,7 +582,7 @@ func fcRestore(api fcClient, dir string, r fcRun, token string) error {
 	res, err := agent.Exec("unix:"+filepath.Join(dir, "v.sock"), agent.Request{
 		Token:    strings.TrimSpace(string(boot)),
 		NewToken: token,
-		Argv: []string{"/.bluebox/bluebox", "__prepare", "--data",
+		Argv: []string{"/.box/box", "__prepare", "--data",
 			hex.EncodeToString(seed), strconv.FormatInt(time.Now().UnixNano(), 10)},
 		TimeoutSeconds: 30,
 	}, nil, nil, io.Discard, &errb)

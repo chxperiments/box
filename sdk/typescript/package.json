@@ -1,7 +1,7 @@
 {
-  "name": "bluebox-sdk",
+  "name": "box-sdk",
   "version": "0.1.0",
-  "description": "TypeScript SDK for bluebox: microVM sandboxes that start in milliseconds",
+  "description": "TypeScript SDK for box: microVM sandboxes that start in milliseconds",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.js",

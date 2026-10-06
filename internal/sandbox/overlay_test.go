@@ -12,11 +12,11 @@ import (
 // parent's data dir and the fork's upper dir for the test to populate.
 func makeFork(t *testing.T) (data, upper string) {
 	t.Helper()
-	t.Setenv("BLUEBOX_HOME", t.TempDir())
+	t.Setenv("BOX_HOME", t.TempDir())
 	if _, err := Create("parent"); err != nil {
 		t.Fatal(err)
 	}
-	p, _ := BluefilePath("parent")
+	p, _ := BoxfilePath("parent")
 	os.WriteFile(p, []byte("base: docker.io/library/alpine:latest\n"), 0o644)
 	if err := CreateFork("parent", "fork"); err != nil {
 		t.Fatal(err)
@@ -60,7 +60,7 @@ func TestForkLayout(t *testing.T) {
 		t.Fatal("a fork of a fork was allowed")
 	}
 	if !Exists("fork") {
-		t.Fatal("fork has no Bluefile")
+		t.Fatal("fork has no Boxfile")
 	}
 }
 

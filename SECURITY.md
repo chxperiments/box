@@ -1,6 +1,6 @@
 # Security
 
-## What bluebox is for
+## What box is for
 
 Giving an AI agent a machine of its own to work in, on your machine, so
 nothing it does reaches the rest of it. The threat is the agent: it may make
@@ -13,14 +13,14 @@ Two layers, checked separately.
 
 **The guest kernel.** Every sandbox is a microVM (libkrun on KVM) with its own
 kernel. A guest kernel exploit takes over the guest, which is thrown away.
-`bluebox build` proves a sandbox got its own kernel by comparing it with the
+`box build` proves a sandbox got its own kernel by comparing it with the
 kernel a plain container sees, and every `run`, `exec` and `up` re-checks that
 the runtime is still the one that passed.
 
 **The VMM's confinement.** libkrun's own documentation states that the guest
 and its VMM "pertain to the same security context": the VMM is a host process
 that performs the guest's file I/O and network connections. So a guest that
-breaks libkrun gets whatever the VMM has, and bluebox gives the VMM as little
+breaks libkrun gets whatever the VMM has, and box gives the VMM as little
 as it can:
 
 - its own network namespace: nothing on the host's loopback is reachable
@@ -28,7 +28,7 @@ as it can:
 - 6 capabilities, the ones virtiofs and low ports need; the other 5 podman
   grants by default are dropped
 - a pids limit and a memory limit (`ram_mib` + 256 MiB)
-- only the directories the Bluefile declares, `/data` and any `mounts:`
+- only the directories the Boxfile declares, `/data` and any `mounts:`
 - with `isolation: strict`, a subordinate host UID that owns nothing of yours
 
 Under standard isolation the VMM runs as your user. Escaping both the guest
@@ -41,7 +41,7 @@ agents.
   Strict separates sandboxes from you, not from each other.
 - **Not a check on a lying guest.** The kernel comparison catches a runtime
   that silently fell back to a container. A guest that fakes `uname` passes.
-- **Not a filter on what the guest runs.** `seccomp:` in a Bluefile filters the
+- **Not a filter on what the guest runs.** `seccomp:` in a Boxfile filters the
   VMM, not the guest. Inside, the workload is root on its own kernel; that is
   the design.
 - **Not egress control, yet.** `network: bridge` is full internet; `none` is
@@ -50,9 +50,9 @@ agents.
   planned.
 - **Not a secrets boundary.** Anything you put in `/data`, a mount or `env:` is
   the workload's to read and send. Credential brokering is planned.
-- **Not multi-tenant.** bluebox is one user's tool. Running other people's
+- **Not multi-tenant.** box is one user's tool. Running other people's
   code as a service needs a jailer-class boundary (Firecracker's, for example)
-  that bluebox does not have.
+  that box does not have.
 
 ## Backends
 
@@ -68,15 +68,15 @@ VMM runs with **no** capabilities, besides the confinement above, and has no
 host directory shared into the guest: `/data` is a disk. Every run restores
 a snapshot, and each restored copy rotates the agent token baked into the
 snapshot, reseeds its randomness and resets its clock before anything runs.
-`bluebox data export` treats what it copies out as hostile.
+`box data export` treats what it copies out as hostile.
 
 The escape suite runs against every backend and both isolation modes.
 
 ## The agent channel (`up`, `exec`, the SDK)
 
-A running sandbox has bluebox itself as the guest's main process, reached
+A running sandbox has box itself as the guest's main process, reached
 over a port published on `127.0.0.1` only. It answers only to a random
-per-VM token (`~/.bluebox/run/<name>.json`, mode 0600), given to podman
+per-VM token (`~/.box/run/<name>.json`, mode 0600), given to podman
 through its environment so it never appears in `ps`. Unauthenticated
 connections are capped at 16 and given 3 seconds, so a local flood cannot lock
 you out. The guest cannot reach the host's loopback, so it cannot reach its own
@@ -87,7 +87,7 @@ directory.
 ## Host-side handling of guest-written files
 
 A guest can write anything into `/data`: symlinks to `/etc/passwd`, `..`
-entries in an archive, device nodes, setuid bits. bluebox's own tools never
+entries in an archive, device nodes, setuid bits. box's own tools never
 follow a guest's symlink on the host (`restore` checks every archive entry
 before unpacking) and host-side `/data` operations on a strict sandbox go
 through `podman unshare`, where the subordinate UID is reachable and yours is
@@ -100,7 +100,7 @@ of `/data` without looking.
 a sandbox, and checks the VMM's confinement from outside:
 
 ```sh
-security/escape-test.sh "$(command -v bluebox)" strict
+security/escape-test.sh "$(command -v box)" strict
 ```
 
 It needs KVM, so it does not run in the hosted CI. `.github/workflows/

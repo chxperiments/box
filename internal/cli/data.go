@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bluebox/internal/runtime"
-	"bluebox/internal/sandbox"
+	"box/internal/runtime"
+	"box/internal/sandbox"
 )
 
 func dataCmd() *cobra.Command {
@@ -38,7 +38,7 @@ func dataCmd() *cobra.Command {
 			go func() {
 				n, err := sandbox.SafeUntar(pr, dest)
 				if n > 0 {
-					fmt.Fprintf(os.Stderr, "bluebox: skipped %s that cannot be exported safely\n", plural(n, "entry", "entries"))
+					fmt.Fprintf(os.Stderr, "box: skipped %s that cannot be exported safely\n", plural(n, "entry", "entries"))
 				}
 				pr.CloseWithError(err)
 				done <- err

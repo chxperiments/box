@@ -2,27 +2,27 @@
 # Escape tests: run the things a hostile agent would try from inside a
 # sandbox, and check that each one fails.
 #
-#   security/escape-test.sh [path/to/bluebox] [standard|strict] [podman|krun|firecracker]
+#   security/escape-test.sh [path/to/box] [standard|strict] [podman|krun|firecracker]
 #
 # firecracker sandboxes have no network and no host mounts, so the checks
 # that need those report what they can and skip the rest.
 #
-# The second argument picks the Bluefile's isolation (default strict). Under
+# The second argument picks the Boxfile's isolation (default strict). Under
 # standard the VMM runs as your own UID by design, which is reported but not
 # counted as a failure.
 #
-# Uses a private BLUEBOX_HOME and a throwaway sandbox; your own sandboxes are
+# Uses a private BOX_HOME and a throwaway sandbox; your own sandboxes are
 # not touched. Needs podman with krun, python3 on the host, and a static
-# bluebox (CGO_ENABLED=0). Exits non-zero if any escape succeeds.
+# box (CGO_ENABLED=0). Exits non-zero if any escape succeeds.
 set -u
 
-BB=${1:-$(command -v bluebox)}
+BB=${1:-$(command -v box)}
 ISOLATION=${2:-strict}
 BACKEND=${3:-podman}
-[ -x "$BB" ] || { echo "no bluebox binary: $BB" >&2; exit 2; }
+[ -x "$BB" ] || { echo "no box binary: $BB" >&2; exit 2; }
 
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/bb-escape.XXXXXX")
-export BLUEBOX_HOME="$WORK/home"
+export BOX_HOME="$WORK/home"
 NAME=escape
 FAILS=0
 PROBE_PID=""
@@ -58,7 +58,7 @@ PROBE_PID=$!
 
 "$BB" new "$NAME" >/dev/null
 if [ "$BACKEND" = firecracker ]; then
-cat > "$BLUEBOX_HOME/sandboxes/$NAME/Bluefile" <<EOF
+cat > "$BOX_HOME/sandboxes/$NAME/Boxfile" <<EOF
 base: docker.io/library/alpine:latest
 cpus: 1
 ram_mib: 512
@@ -68,7 +68,7 @@ isolation: $ISOLATION
 backend: firecracker
 EOF
 else
-cat > "$BLUEBOX_HOME/sandboxes/$NAME/Bluefile" <<EOF
+cat > "$BOX_HOME/sandboxes/$NAME/Boxfile" <<EOF
 base: docker.io/library/alpine:latest
 cpus: 1
 ram_mib: 512
@@ -81,7 +81,7 @@ mounts:
     guest: /ro
 EOF
 # strict allows read-only mounts only; standard also gets a writable one.
-[ "$ISOLATION" = standard ] && cat >> "$BLUEBOX_HOME/sandboxes/$NAME/Bluefile" <<EOF
+[ "$ISOLATION" = standard ] && cat >> "$BOX_HOME/sandboxes/$NAME/Boxfile" <<EOF
   - host: $WORK/rw
     guest: /rw
     mode: rw
@@ -121,7 +121,7 @@ got=$(guest "ln -sf '$WORK/secret/key' $SHARED/link && cat $SHARED/link 2>/dev/n
 case "$got" in *"$SECRET"*) fail "a symlink in a shared dir resolved onto the host" ;; *) pass "symlinks in shared dirs resolve inside the guest" ;; esac
 got=$(guest "cat /rw/../../../../../../'$WORK'/secret/key 2>/dev/null; cat /data/../../../../'$WORK'/secret/key 2>/dev/null")
 case "$got" in *"$SECRET"*) fail "path traversal out of a shared dir" ;; *) pass "no path traversal out of shared dirs" ;; esac
-if [ -L "$WORK/rw/link" ] || [ -L "$BLUEBOX_HOME/data/$NAME/link" ]; then
+if [ -L "$WORK/rw/link" ] || [ -L "$BOX_HOME/data/$NAME/link" ]; then
   # The guest can plant a symlink pointing anywhere; that is only harmless
   # if host-side tooling never follows it. Record it so it stays visible.
   pass "guest-planted symlink exists on the host as a plain symlink (host tools must not follow it)"
@@ -140,22 +140,22 @@ fi
 
 echo
 echo "the agent channel"
-got=$(guest 'cat /proc/1/environ 2>/dev/null | tr "\0" "\n"; env; cat /.bluebox/* 2>/dev/null | head -c 0')
-case "$got" in *BLUEBOX_AGENT_TOKEN*) fail "the agent token is visible inside the guest" ;; *) pass "agent token not visible in the guest" ;; esac
-guest 'echo x > /.bluebox/bluebox' >/dev/null && fail "guest can overwrite the agent binary" || pass "agent binary is read-only"
-sock=$("$BB" env "$NAME" >/dev/null; ls "$BLUEBOX_HOME"/bluebox.sock 2>/dev/null)
-got=$(guest "ls -la / /run /tmp 2>/dev/null | grep -c bluebox.sock")
+got=$(guest 'cat /proc/1/environ 2>/dev/null | tr "\0" "\n"; env; cat /.box/* 2>/dev/null | head -c 0')
+case "$got" in *BOX_AGENT_TOKEN*) fail "the agent token is visible inside the guest" ;; *) pass "agent token not visible in the guest" ;; esac
+guest 'echo x > /.box/box' >/dev/null && fail "guest can overwrite the agent binary" || pass "agent binary is read-only"
+sock=$("$BB" env "$NAME" >/dev/null; ls "$BOX_HOME"/box.sock 2>/dev/null)
+got=$(guest "ls -la / /run /tmp 2>/dev/null | grep -c box.sock")
 [ "${got:-0}" = "0" ] && pass "SDK server socket is not exposed to the guest" || fail "SDK server socket visible in the guest"
 
 echo
 echo "devices and privileges"
 guest '[ -e /dev/kvm ]' >/dev/null && fail "/dev/kvm is exposed to the guest (nested VMs)" || pass "no /dev/kvm in the guest"
 if [ "$BACKEND" = firecracker ]; then
-  vmm=$(cat "$BLUEBOX_HOME/vms/bluebox-up-$NAME/pid" 2>/dev/null)
+  vmm=$(cat "$BOX_HOME/vms/box-up-$NAME/pid" 2>/dev/null)
 elif [ "$BACKEND" = krun ]; then
-  vmm=$(krun --root "${XDG_RUNTIME_DIR:-/tmp}/bluebox/krun" state "bluebox-up-$NAME" 2>/dev/null | sed -n 's/.*"pid": *\([0-9]*\).*/\1/p')
+  vmm=$(krun --root "${XDG_RUNTIME_DIR:-/tmp}/box/krun" state "box-up-$NAME" 2>/dev/null | sed -n 's/.*"pid": *\([0-9]*\).*/\1/p')
 else
-  vmm=$(podman inspect "bluebox-up-$NAME" --format '{{.State.Pid}}' 2>/dev/null)
+  vmm=$(podman inspect "box-up-$NAME" --format '{{.State.Pid}}' 2>/dev/null)
 fi
 if [ -n "$vmm" ] && [ -r "/proc/$vmm/status" ]; then
   nnp=$(awk '/NoNewPrivs/{print $2}' "/proc/$vmm/status")
@@ -190,8 +190,8 @@ if [ "$BACKEND" != podman ] && [ -n "$vmm" ]; then
   pids=$(cat "$cg/pids.max" 2>/dev/null); mem=$(cat "$cg/memory.max" 2>/dev/null)
   [ "$pids" = max ] && pids=0; [ "$mem" = max ] && mem=0
 else
-  pids=$(podman inspect "bluebox-up-$NAME" --format '{{.HostConfig.PidsLimit}}' 2>/dev/null)
-  mem=$(podman inspect "bluebox-up-$NAME" --format '{{.HostConfig.Memory}}' 2>/dev/null)
+  pids=$(podman inspect "box-up-$NAME" --format '{{.HostConfig.PidsLimit}}' 2>/dev/null)
+  mem=$(podman inspect "box-up-$NAME" --format '{{.HostConfig.Memory}}' 2>/dev/null)
 fi
 [ "${pids:-0}" -gt 0 ] && pass "VMM has a pids limit ($pids)" || fail "VMM has no pids limit"
 [ "${mem:-0}" -gt 0 ] && pass "VMM has a memory limit ($((mem / 1048576)) MiB)" || fail "VMM has no memory limit"

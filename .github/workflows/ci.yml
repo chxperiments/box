@@ -38,11 +38,11 @@ jobs:
         run: go test -race ./...
 
       - name: build
-        run: go build ./cmd/bluebox
+        run: go build ./cmd/box
 
       # The runner has no KVM, so the microVM paths cannot run here. Check the
       # binary at least starts and reports its commands.
       - name: smoke
         run: |
-          go run ./cmd/bluebox --help
-          go run ./cmd/bluebox --version
+          go run ./cmd/box --help
+          go run ./cmd/box --version

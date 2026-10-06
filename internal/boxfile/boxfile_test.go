@@ -1,4 +1,4 @@
-package bluefile
+package boxfile
 
 import (
 	"os"
@@ -9,7 +9,7 @@ import (
 
 func write(t *testing.T, body string) string {
 	t.Helper()
-	p := filepath.Join(t.TempDir(), "Bluefile")
+	p := filepath.Join(t.TempDir(), "Boxfile")
 	if err := os.WriteFile(p, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -133,9 +133,9 @@ func TestMountValidation(t *testing.T) {
 // Everything shipped under examples/ must keep parsing as the validation
 // rules grow.
 func TestShippedExamplesStillParse(t *testing.T) {
-	matches, err := filepath.Glob("../../examples/*/Bluefile")
+	matches, err := filepath.Glob("../../examples/*/Boxfile")
 	if err != nil || len(matches) == 0 {
-		t.Fatalf("no example Bluefiles found: %v", err)
+		t.Fatalf("no example Boxfiles found: %v", err)
 	}
 	for _, p := range matches {
 		if _, err := Parse(p); err != nil {
@@ -242,7 +242,7 @@ func TestCommentsAndEmptyFile(t *testing.T) {
 
 func TestBlueprintRendersUsersFilesAndCommands(t *testing.T) {
 	dir := t.TempDir()
-	p := filepath.Join(dir, "Bluefile")
+	p := filepath.Join(dir, "Boxfile")
 	os.WriteFile(p, []byte(`
 base: docker.io/library/debian:12
 blueprint:
@@ -289,7 +289,7 @@ blueprint:
 // Alpine has no useradd, so the apk path must use adduser instead.
 func TestBlueprintUserCommandPerDistro(t *testing.T) {
 	dir := t.TempDir()
-	p := filepath.Join(dir, "Bluefile")
+	p := filepath.Join(dir, "Boxfile")
 	os.WriteFile(p, []byte("base: docker.io/library/alpine:latest\n"+
 		"blueprint:\n  users:\n    - name: a\n"), 0o644)
 	s, _ := Parse(p)
@@ -320,7 +320,7 @@ func TestBlueprintValidation(t *testing.T) {
 		"user needs mgr": "base: example.com/x:1\nblueprint:\n  users:\n    - name: a\n",
 	}
 	for name, body := range cases {
-		p := filepath.Join(t.TempDir(), "Bluefile")
+		p := filepath.Join(t.TempDir(), "Boxfile")
 		os.WriteFile(p, []byte(body), 0o644)
 		if _, err := Parse(p); err == nil {
 			t.Errorf("%s: expected error, got none", name)
@@ -330,7 +330,7 @@ func TestBlueprintValidation(t *testing.T) {
 
 func TestWarmupLinesMustBeNonEmpty(t *testing.T) {
 	for _, bad := range []string{"warmup: ['']", "warmup: ['   ']"} {
-		p := filepath.Join(t.TempDir(), "Bluefile")
+		p := filepath.Join(t.TempDir(), "Boxfile")
 		os.WriteFile(p, []byte(bad+"\n"), 0o644)
 		if _, err := Parse(p); err == nil {
 			t.Errorf("%q parsed", bad)
@@ -351,7 +351,7 @@ func TestIsolation(t *testing.T) {
 		{"isolation: paranoid", false},
 	}
 	for _, c := range cases {
-		p := filepath.Join(t.TempDir(), "Bluefile")
+		p := filepath.Join(t.TempDir(), "Boxfile")
 		os.WriteFile(p, []byte(c.yaml+"\n"), 0o644)
 		s, err := Parse(p)
 		if (err == nil) != c.ok {

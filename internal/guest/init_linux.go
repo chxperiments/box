@@ -1,5 +1,5 @@
-// Package guest is bluebox inside a Firecracker microVM. The kernel starts
-// the bluebox binary as PID 1 (init=/.bluebox/bluebox); Init sets the
+// Package guest is box inside a Firecracker microVM. The kernel starts
+// the box binary as PID 1 (init=/.box/box); Init sets the
 // machine up, runs the agent, and reaps orphans. Prepare runs once per
 // restored copy, before anything else, to make it a distinct machine.
 //
@@ -23,19 +23,19 @@ import (
 
 // Files the image build places in the rootfs for the guest.
 const (
-	agentPath = "/.bluebox/bluebox"
-	envPath   = "/.bluebox/env" // KEY=VALUE lines: the image's ENV and the Bluefile's env
-	dataDev   = "/dev/vdb"      // the sandbox's /data disk
-	logPrefix = "bluebox-init: "
+	agentPath = "/.box/box"
+	envPath   = "/.box/env" // KEY=VALUE lines: the image's ENV and the Boxfile's env
+	dataDev   = "/dev/vdb"  // the sandbox's /data disk
+	logPrefix = "box-init: "
 )
 
-// cmdline reads bluebox.* parameters from the kernel command line.
+// cmdline reads box.* parameters from the kernel command line.
 func cmdline() map[string]string {
 	b, _ := os.ReadFile("/proc/cmdline")
 	out := map[string]string{}
 	for _, f := range strings.Fields(string(b)) {
-		if k, v, ok := strings.Cut(f, "="); ok && strings.HasPrefix(k, "bluebox.") {
-			out[strings.TrimPrefix(k, "bluebox.")] = v
+		if k, v, ok := strings.Cut(f, "="); ok && strings.HasPrefix(k, "box.") {
+			out[strings.TrimPrefix(k, "box.")] = v
 		}
 	}
 	return out
@@ -161,7 +161,7 @@ func startAgent() {
 		}
 		f.Close()
 	}
-	env = append(env, "BLUEBOX_AGENT_TOKEN="+cmdline()["token"])
+	env = append(env, "BOX_AGENT_TOKEN="+cmdline()["token"])
 	go func() {
 		for {
 			cmd := exec.Command(agentPath, "__agent", "--vsock")
@@ -195,7 +195,7 @@ func reap() {
 	}
 }
 
-// Prepare is `bluebox __prepare`, run by the host as the very first command
+// Prepare is `box __prepare`, run by the host as the very first command
 // in a VM restored from a snapshot. Every copy of a snapshot starts with the
 // same memory -- the same random state, the same clock -- so this mixes in
 // randomness only this copy got, sets the clock, and then mounts /data. The

@@ -7,7 +7,7 @@ import (
 	"sort"
 	"strings"
 
-	"bluebox/internal/bluefile"
+	"box/internal/boxfile"
 )
 
 // Backend turns a built image into a running microVM. Images are always
@@ -16,15 +16,15 @@ import (
 // isolation checks, what the VMM may do on the host -- is shared, so a
 // backend is only as much code as the launch itself.
 //
-// Which backend a sandbox uses is the Bluefile's `backend:`; BLUEBOX_BACKEND
+// Which backend a sandbox uses is the Boxfile's `backend:`; BOX_BACKEND
 // overrides it for experiments.
 type Backend interface {
-	// Name is the Bluefile value that selects this backend.
+	// Name is the Boxfile value that selects this backend.
 	Name() string
 	// Preflight fails loudly when the host cannot run this backend.
 	Preflight() error
 	// Launch returns the command that boots a VM. It is not started.
-	Launch(name string, s bluefile.Spec, l Launch) (*exec.Cmd, error)
+	Launch(name string, s boxfile.Spec, l Launch) (*exec.Cmd, error)
 	// AgentAddr is host:port where a detached VM's agent can be reached.
 	AgentAddr(vm string) (string, error)
 	// Logs returns what a VM printed, for diagnosing a boot that failed.
@@ -50,20 +50,20 @@ type Launch struct {
 	Baseline    bool              // a plain container instead of a microVM: the isolation check's reference
 }
 
-// backends is every backend this build knows, by Bluefile name.
+// backends is every backend this build knows, by Boxfile name.
 var backends = map[string]Backend{}
 
 func register(b Backend) { backends[b.Name()] = b }
 
 // backendFor picks the sandbox's backend. The environment override is for
 // trying another backend on an existing sandbox without editing it.
-func backendFor(s bluefile.Spec) (Backend, error) {
+func backendFor(s boxfile.Spec) (Backend, error) {
 	name := s.Backend
-	if env := os.Getenv("BLUEBOX_BACKEND"); env != "" {
+	if env := os.Getenv("BOX_BACKEND"); env != "" {
 		name = env
 	}
 	if name == "" {
-		name = bluefile.Default.Backend
+		name = boxfile.Default.Backend
 	}
 	b, ok := backends[name]
 	if !ok {
@@ -78,7 +78,7 @@ func backendFor(s bluefile.Spec) (Backend, error) {
 }
 
 // backendOf is backendFor by sandbox name, for paths that have no spec in
-// hand (Down, the pool's cleanup). A sandbox whose Bluefile no longer parses
+// hand (Down, the pool's cleanup). A sandbox whose Boxfile no longer parses
 // gets the default backend, which is the one most likely to own its VMs.
 func backendOf(name string) Backend {
 	if s, err := parseSpec(name); err == nil {
@@ -86,14 +86,14 @@ func backendOf(name string) Backend {
 			return b
 		}
 	}
-	return backends[bluefile.Default.Backend]
+	return backends[boxfile.Default.Backend]
 }
 
 // Preflight checks the default backend's host requirements.
-func Preflight() error { return backends[bluefile.Default.Backend].Preflight() }
+func Preflight() error { return backends[boxfile.Default.Backend].Preflight() }
 
 // PreflightFor checks the host can run a sandbox's own backend.
-func PreflightFor(s bluefile.Spec) error {
+func PreflightFor(s boxfile.Spec) error {
 	b, err := backendFor(s)
 	if err != nil {
 		return err

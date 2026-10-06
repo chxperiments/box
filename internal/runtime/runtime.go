@@ -1,5 +1,5 @@
 // Package runtime drives podman + the krun runtime. It is the only place that
-// knows how a Bluefile spec becomes VM isolation, so swapping the backend later
+// knows how a Boxfile spec becomes VM isolation, so swapping the backend later
 // means touching this file alone.
 package runtime
 
@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"bluebox/internal/agent"
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/agent"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
 // ExitTimeout matches timeout(1) so a harness can tell "killed on time" from a
@@ -29,7 +29,7 @@ var ErrTimeout = errors.New("timed out")
 
 // vmArgs builds the podman invocation. All isolation lives in these flags, so
 // they are constructed in exactly one place.
-func vmArgs(name string, s bluefile.Spec, interactive, useKrun bool) ([]string, error) {
+func vmArgs(name string, s boxfile.Spec, interactive, useKrun bool) ([]string, error) {
 	// /data itself, or for a fork an overlay on the parent's /data.
 	data, err := sandbox.DataMount(name)
 	if err != nil {
@@ -40,7 +40,7 @@ func vmArgs(name string, s bluefile.Spec, interactive, useKrun bool) ([]string, 
 	}
 	// The sandbox image is always built locally. --pull=never makes a missing
 	// image an error rather than a registry pull, so the only image that can
-	// boot here is the one `bluebox build` produced.
+	// boot here is the one `box build` produced.
 	args := []string{"run", "--rm", "--pull=never"}
 	if useKrun {
 		args = append(args, "--runtime", "krun")
@@ -52,7 +52,7 @@ func vmArgs(name string, s bluefile.Spec, interactive, useKrun bool) ([]string, 
 		"--annotation", "krun.ram_mib="+strconv.Itoa(s.RAMMiB),
 		"-v", data,
 	)
-	// Declarative mounts from the Bluefile. Mode was normalized at parse
+	// Declarative mounts from the Boxfile. Mode was normalized at parse
 	// time, but stay defensive: an empty mode means read-only.
 	for _, m := range s.Mounts {
 		mode := m.Mode
@@ -83,21 +83,21 @@ func vmArgs(name string, s bluefile.Spec, interactive, useKrun bool) ([]string, 
 	return args, nil
 }
 
-// LoadSpec reads a sandbox's Bluefile.
-func LoadSpec(name string) (bluefile.Spec, error) {
+// LoadSpec reads a sandbox's Boxfile.
+func LoadSpec(name string) (boxfile.Spec, error) {
 	if !sandbox.Exists(name) {
-		return bluefile.Spec{}, fmt.Errorf("%w %q (create it: bluebox new %s)", ErrNoSandbox, name, name)
+		return boxfile.Spec{}, fmt.Errorf("%w %q (create it: box new %s)", ErrNoSandbox, name, name)
 	}
 	return parseSpec(name)
 }
 
-// ErrNoSandbox is returned for a name with no Bluefile.
+// ErrNoSandbox is returned for a name with no Boxfile.
 var ErrNoSandbox = errors.New("no sandbox")
 
 // RunFresh runs argv in a fresh microVM: a pooled one when the sandbox keeps
 // a warm pool and one is waiting, otherwise one booted now. notice, if not
 // nil, hears about slow paths such as a re-verification.
-func RunFresh(name string, s bluefile.Spec, argv []string, streams Streams, notice func(string)) error {
+func RunFresh(name string, s boxfile.Spec, argv []string, streams Streams, notice func(string)) error {
 	// A pooled VM was checked when it booted and its kernel is checked again
 	// before the command starts, so the warm path skips the toolchain checks
 	// below and costs a connection, not a boot.
@@ -113,7 +113,7 @@ func RunFresh(name string, s bluefile.Spec, argv []string, streams Streams, noti
 }
 
 // UpChecked is Up behind the same checks a run gets.
-func UpChecked(name string, s bluefile.Spec, notice func(string)) (time.Duration, error) {
+func UpChecked(name string, s boxfile.Spec, notice func(string)) (time.Duration, error) {
 	if err := checked(name, s, notice); err != nil {
 		return 0, err
 	}
@@ -122,7 +122,7 @@ func UpChecked(name string, s bluefile.Spec, notice func(string)) (time.Duration
 
 // checked confirms the toolchain is present and the kernel boundary still
 // holds -- cheaply when the runtime is unchanged -- before untrusted code runs.
-func checked(name string, s bluefile.Spec, notice func(string)) error {
+func checked(name string, s boxfile.Spec, notice func(string)) error {
 	b, err := backendFor(s)
 	if err != nil {
 		return err
@@ -161,7 +161,7 @@ const vmmPidsLimit = 512
 
 // hardening confines the VMM process on the host. It is the boundary between
 // a guest that has broken out of libkrun and the rest of the machine.
-func hardening(s bluefile.Spec) []string {
+func hardening(s boxfile.Spec) []string {
 	args := []string{
 		"--security-opt", "no-new-privileges",
 		"--cap-drop=all", "--cap-add=" + vmmCaps,
@@ -188,7 +188,7 @@ const strictMap = "0:1:65536"
 // under standard isolation, the first subordinate UID under strict. Ownership
 // only changes when a sandbox switches between the two, so this is a stat on
 // every boot and a chown once.
-func prepareData(name string, s bluefile.Spec) error {
+func prepareData(name string, s boxfile.Spec) error {
 	if parent, err := sandbox.Parent(name); err == nil {
 		// A fork's /data is the parent's, overlaid. The lower layer is
 		// prepared for the parent's isolation, so the fork must use the same
@@ -198,7 +198,7 @@ func prepareData(name string, s bluefile.Spec) error {
 			return err
 		}
 		if ps.Isolation != s.Isolation {
-			return fmt.Errorf("%s is a fork of %s, whose isolation is %s; set the same in the fork's Bluefile",
+			return fmt.Errorf("%s is a fork of %s, whose isolation is %s; set the same in the fork's Boxfile",
 				name, parent, ps.Isolation)
 		}
 		if err := prepareData(parent, ps); err != nil {
@@ -218,7 +218,7 @@ func prepareData(name string, s bluefile.Spec) error {
 }
 
 // ownData gives a data directory to whoever the sandbox's root is on the host.
-func ownData(data string, s bluefile.Spec) error {
+func ownData(data string, s boxfile.Spec) error {
 	if err := os.MkdirAll(data, 0o755); err != nil {
 		return err
 	}
@@ -242,7 +242,7 @@ func ownData(data string, s bluefile.Spec) error {
 }
 
 // Build renders the Containerfile from the spec, writes it, and builds the image.
-func Build(name string, s bluefile.Spec) error {
+func Build(name string, s boxfile.Spec) error {
 	cfPath, err := sandbox.ContainerfilePath(name)
 	if err != nil {
 		return err
@@ -301,7 +301,7 @@ func Terminal() Streams { return Streams{Stdout: os.Stdout, Stderr: os.Stderr} }
 
 // Run executes argv in a fresh microVM. A timed-out run is reaped explicitly:
 // killing the podman CLI does not stop the VM it started, so --rm never fires.
-func Run(name string, s bluefile.Spec, argv []string, streams Streams) error {
+func Run(name string, s boxfile.Spec, argv []string, streams Streams) error {
 	if err := prepareData(name, s); err != nil {
 		return err
 	}
@@ -309,7 +309,7 @@ func Run(name string, s bluefile.Spec, argv []string, streams Streams) error {
 	if err != nil {
 		return err
 	}
-	runName := fmt.Sprintf("bluebox-%s-%d", name, os.Getpid())
+	runName := fmt.Sprintf("box-%s-%d", name, os.Getpid())
 	cmd, err := b.Launch(name, s, Launch{VM: runName, Argv: argv, Interactive: streams.Stdin != nil})
 	if err != nil {
 		return err
@@ -373,7 +373,7 @@ func openLog(name string) *os.File {
 }
 
 // Shell opens an interactive session in one microVM. No timeout: the user is it.
-func Shell(name string, s bluefile.Spec) error {
+func Shell(name string, s boxfile.Spec) error {
 	if err := prepareData(name, s); err != nil {
 		return err
 	}
@@ -390,7 +390,7 @@ func Shell(name string, s bluefile.Spec) error {
 }
 
 // GuestKernel returns the kernel reported from inside the microVM.
-func GuestKernel(name string, s bluefile.Spec) (string, error) {
+func GuestKernel(name string, s boxfile.Spec) (string, error) {
 	return kernelOf(name, s, true)
 }
 
@@ -399,11 +399,11 @@ func GuestKernel(name string, s bluefile.Spec) (string, error) {
 // than the host's own uname is what makes the isolation check honest on macOS,
 // where the host runs Darwin and every container kernel differs from it
 // whether or not a microVM is involved.
-func BaselineKernel(name string, s bluefile.Spec) (string, error) {
+func BaselineKernel(name string, s boxfile.Spec) (string, error) {
 	return kernelOf(name, s, false)
 }
 
-func kernelOf(name string, s bluefile.Spec, useKrun bool) (string, error) {
+func kernelOf(name string, s boxfile.Spec, useKrun bool) (string, error) {
 	if err := prepareData(name, s); err != nil {
 		return "", err
 	}

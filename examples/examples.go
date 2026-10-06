@@ -1,4 +1,4 @@
-// Package examples embeds the example sandboxes, so `bluebox new --from`
+// Package examples embeds the example sandboxes, so `box new --from`
 // works from an installed binary, not only from a checkout of the repo.
 package examples
 
@@ -27,10 +27,10 @@ func Names() []string {
 	return names
 }
 
-// Load returns an example's Bluefile and any other files that come with it,
+// Load returns an example's Boxfile and any other files that come with it,
 // keyed by file name. Only names from Names are accepted, so a name can never
 // reach outside the embedded tree.
-func Load(name string) (bluefile []byte, extras map[string][]byte, err error) {
+func Load(name string) (boxfile []byte, extras map[string][]byte, err error) {
 	known := false
 	for _, n := range Names() {
 		known = known || n == name
@@ -51,14 +51,14 @@ func Load(name string) (bluefile []byte, extras map[string][]byte, err error) {
 		if err != nil {
 			return nil, nil, err
 		}
-		if e.Name() == "Bluefile" {
-			bluefile = b
+		if e.Name() == "Boxfile" {
+			boxfile = b
 		} else {
 			extras[e.Name()] = b
 		}
 	}
-	if bluefile == nil {
-		return nil, nil, fmt.Errorf("example %q has no Bluefile", name)
+	if boxfile == nil {
+		return nil, nil, fmt.Errorf("example %q has no Boxfile", name)
 	}
-	return bluefile, extras, nil
+	return boxfile, extras, nil
 }

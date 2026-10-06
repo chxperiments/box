@@ -7,7 +7,7 @@ import (
 	"strings"
 	"syscall"
 
-	"bluebox/internal/sandbox"
+	"box/internal/sandbox"
 )
 
 // MountOverlay mounts a fork's overlay if it is not mounted yet. It must run
@@ -22,9 +22,9 @@ func MountOverlay(name string) error {
 	}
 	for _, p := range []string{lower, upper, work, merge} {
 		// The option string is comma-separated; a comma in a path would
-		// split it. Names are validated, so only BLUEBOX_HOME can bring one.
+		// split it. Names are validated, so only BOX_HOME can bring one.
 		if strings.ContainsAny(p, ",:") {
-			return fmt.Errorf("fork paths cannot contain ',' or ':' (BLUEBOX_HOME is %q)", p)
+			return fmt.Errorf("fork paths cannot contain ',' or ':' (BOX_HOME is %q)", p)
 		}
 	}
 	if err := os.MkdirAll(lower, 0o755); err != nil {

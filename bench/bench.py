@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Latency benchmark: bluebox against its baselines and neighbours.
+"""Latency benchmark: box against its baselines and neighbours.
 
 Every tool runs the same workloads, timed on the host from "start the
 command" to "have its exit status" -- what a caller such as an agent loop
 actually waits for.
 
-    python3 bench/bench.py [-n 20] [--bluebox PATH] [--monty-python PATH]
+    python3 bench/bench.py [-n 20] [--box PATH] [--monty-python PATH]
 
-It builds two throwaway sandboxes in a private BLUEBOX_HOME (your own
+It builds two throwaway sandboxes in a private BOX_HOME (your own
 sandboxes are not touched) and removes them when done. Needs podman with
-krun, and a static bluebox (CGO_ENABLED=0). Monty is measured when the
+krun, and a static box (CGO_ENABLED=0). Monty is measured when the
 Python given by --monty-python can import pydantic_monty.
 """
 
@@ -53,9 +53,9 @@ def summary(xs):
     return {"min": xs[0], "median": statistics.median(xs), "p95": p95}
 
 
-def bluebox_sandbox(bb, env, name, warm):
+def box_sandbox(bb, env, name, warm):
     subprocess.run([bb, "new", name], env=env, check=True, stdout=subprocess.DEVNULL)
-    with open(os.path.join(env["BLUEBOX_HOME"], "sandboxes", name, "Bluefile"), "w") as f:
+    with open(os.path.join(env["BOX_HOME"], "sandboxes", name, "Boxfile"), "w") as f:
         f.write(f"base: {IMAGE_BASE}\ncpus: 1\nram_mib: 512\nwarm: {warm}\n"
                 "packages:\n  - python3\n")
     subprocess.run([bb, "build", name], env=env, check=True,
@@ -74,8 +74,8 @@ def wait_warm(bb, env, name, want, timeout=60):
 
 def monty_series(python, n):
     """Monty 1.0 runs code in a pool of worker processes. A checkout is a fresh
-    REPL session (the counterpart of a pooled `bluebox run`); feeding the same
-    session again keeps its state (the counterpart of `bluebox exec`)."""
+    REPL session (the counterpart of a pooled `box run`); feeding the same
+    session again keeps its state (the counterpart of `box exec`)."""
     code = f"""
 import json, time, pydantic_monty
 src = {PY!r}.replace("print(", "(")
@@ -110,14 +110,14 @@ print(json.dumps(ts))
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("-n", type=int, default=20)
-    ap.add_argument("--bluebox", default=shutil.which("bluebox") or "bluebox")
+    ap.add_argument("--box", default=shutil.which("box") or "box")
     ap.add_argument("--monty-python", default=sys.executable)
     ap.add_argument("--json", help="also write raw results here")
     args = ap.parse_args()
 
-    home = tempfile.mkdtemp(prefix="bluebox-bench-")
-    env = dict(os.environ, BLUEBOX_HOME=home)
-    bb, n = args.bluebox, args.n
+    home = tempfile.mkdtemp(prefix="box-bench-")
+    env = dict(os.environ, BOX_HOME=home)
+    bb, n = args.box, args.n
     results = {}
 
     def record(tool, isolation, workload, xs):
@@ -127,9 +127,9 @@ def main():
 
     try:
         print("building sandboxes...", flush=True)
-        bluebox_sandbox(bb, env, "bench-cold", 0)
-        bluebox_sandbox(bb, env, "bench-warm", 2)
-        image = "localhost/bluebox/bench-cold:latest"
+        box_sandbox(bb, env, "bench-cold", 0)
+        box_sandbox(bb, env, "bench-warm", 2)
+        image = "localhost/box/bench-cold:latest"
 
         for w, argv in WORKLOADS.items():
             record("host process", "none", w, series(lambda: timed(argv), n))
@@ -137,17 +137,17 @@ def main():
                    series(lambda: timed(["podman", "run", "--rm", image] + argv), n))
             record("podman + krun", "microVM", w,
                    series(lambda: timed(["podman", "run", "--rm", "--runtime", "krun", image] + argv), n))
-            record("bluebox run (cold)", "microVM", w,
+            record("box run (cold)", "microVM", w,
                    series(lambda: timed([bb, "run", "bench-cold", "--"] + argv, env), n))
             # Spaced so each run finds the pool refilled: this measures the
             # latency a pooled run gets, not how fast the pool refills.
             wait_warm(bb, env, "bench-warm", 2)
-            record("bluebox run (warm: 2)", "microVM, fresh per run", w,
+            record("box run (warm: 2)", "microVM, fresh per run", w,
                    series(lambda: timed([bb, "run", "bench-warm", "--"] + argv, env), n, gap=2.5))
 
         subprocess.run([bb, "up", "bench-cold"], env=env, check=True, stdout=subprocess.DEVNULL)
         for w, argv in WORKLOADS.items():
-            record("bluebox exec (up)", "microVM, persistent", w,
+            record("box exec (up)", "microVM, persistent", w,
                    series(lambda: timed([bb, "exec", "bench-cold", "--"] + argv, env), n))
         subprocess.run([bb, "down", "bench-cold"], env=env, stdout=subprocess.DEVNULL)
 

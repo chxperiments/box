@@ -10,11 +10,11 @@ import (
 	goruntime "runtime"
 	"strings"
 
-	"bluebox/internal/sandbox"
+	"box/internal/sandbox"
 )
 
 // Check is one finding of Doctor. A failed check carries the command or
-// change that fixes it; a warning is something that limits bluebox (no
+// change that fixes it; a warning is something that limits box (no
 // strict mode, no up/exec) without stopping it.
 type Check struct {
 	Name   string
@@ -87,8 +87,8 @@ func Doctor() []Check {
 	if exe, err := os.Executable(); err == nil {
 		if dyn, err := dynamicallyLinked(exe); err == nil && dyn {
 			add(Check{Name: "static binary", Warn: true,
-				Detail: "this bluebox is dynamically linked, so it cannot be the guest agent: up, exec and warm will refuse",
-				Fix:    "CGO_ENABLED=0 go build -o bluebox ./cmd/bluebox   (release builds are static)"})
+				Detail: "this box is dynamically linked, so it cannot be the guest agent: up, exec and warm will refuse",
+				Fix:    "CGO_ENABLED=0 go build -o box ./cmd/box   (release builds are static)"})
 		} else {
 			add(Check{Name: "static binary", OK: true, Detail: "up, exec and warm can use it as the guest agent"})
 		}
@@ -97,13 +97,13 @@ func Doctor() []Check {
 	home, err := sandbox.Home()
 	switch {
 	case err != nil:
-		add(Check{Name: "bluebox home", Detail: err.Error()})
+		add(Check{Name: "box home", Detail: err.Error()})
 	default:
 		if err := os.MkdirAll(home, 0o755); err != nil {
-			add(Check{Name: "bluebox home", Detail: home + ": " + err.Error(),
-				Fix: "point BLUEBOX_HOME at a writable directory"})
+			add(Check{Name: "box home", Detail: home + ": " + err.Error(),
+				Fix: "point BOX_HOME at a writable directory"})
 		} else {
-			add(Check{Name: "bluebox home", OK: true, Detail: home})
+			add(Check{Name: "box home", OK: true, Detail: home})
 		}
 	}
 	if _, err := sandbox.SocketPath(); err != nil {
@@ -121,7 +121,7 @@ func Doctor() []Check {
 		}
 	} else {
 		add(Check{Name: "isolation", Warn: true, Detail: "not verified yet",
-			Fix: "bluebox build <name>   proves a sandbox gets its own kernel"})
+			Fix: "box build <name>   proves a sandbox gets its own kernel"})
 	}
 	return cs
 }

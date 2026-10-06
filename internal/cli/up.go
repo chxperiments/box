@@ -12,20 +12,20 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bluebox/internal/agent"
-	"bluebox/internal/guest"
-	"bluebox/internal/mcp"
-	"bluebox/internal/runtime"
-	"bluebox/internal/sandbox"
-	"bluebox/internal/server"
+	"box/internal/agent"
+	"box/internal/guest"
+	"box/internal/mcp"
+	"box/internal/runtime"
+	"box/internal/sandbox"
+	"box/internal/server"
 )
 
 func upCmd() *cobra.Command {
 	return &cobra.Command{
 		Use: "up <name>", Short: "boot once, keep running", GroupID: groupRun,
-		Long: "Boots the sandbox's microVM and leaves it running, so bluebox exec\n" +
+		Long: "Boots the sandbox's microVM and leaves it running, so box exec\n" +
 			"reaches it in milliseconds instead of booting a VM per command.\n" +
-			"State outside /data lasts until bluebox down.",
+			"State outside /data lasts until box down.",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeName,
 		RunE: func(_ *cobra.Command, args []string) error {
@@ -48,16 +48,16 @@ func execCmd() *cobra.Command {
 	var interactive bool
 	c := &cobra.Command{
 		Use: "exec <name> [command...]", Short: "run in the running VM", GroupID: groupRun,
-		Long: "Runs one command in a sandbox brought up with bluebox up. Nothing is\n" +
+		Long: "Runs one command in a sandbox brought up with box up. Nothing is\n" +
 			"booted, so it starts in milliseconds and sees what earlier commands\n" +
 			"left behind. Exit codes pass through; timeout_seconds applies per\n" +
 			"command and exits 124.\n\n" +
 			"Piped stdin is forwarded. A terminal is not, unless -i is given.",
 		Args:              cobra.MinimumNArgs(2),
 		ValidArgsFunction: completeRunArgs,
-		Example: "  bluebox up devbox\n" +
-			"  bluebox exec devbox -- pip install requests\n" +
-			"  echo 'print(1)' | bluebox exec devbox -- python3 -",
+		Example: "  box up devbox\n" +
+			"  box exec devbox -- pip install requests\n" +
+			"  echo 'print(1)' | box exec devbox -- python3 -",
 		RunE: func(_ *cobra.Command, args []string) error {
 			name, argv := args[0], args[1:]
 			s, err := loadSpec(name)
@@ -75,7 +75,7 @@ func execCmd() *cobra.Command {
 			case err == nil:
 				return nil
 			case errors.Is(err, runtime.ErrNotUp):
-				return fmt.Errorf("%s is not up; start it: bluebox up %s", name, name)
+				return fmt.Errorf("%s is not up; start it: box up %s", name, name)
 			case err == runtime.ErrTimeout:
 				exitCode = runtime.ExitTimeout
 				return fmt.Errorf("killed after %ds (timeout_seconds)", s.TimeoutSeconds)
@@ -95,7 +95,7 @@ func execCmd() *cobra.Command {
 func downCmd() *cobra.Command {
 	return &cobra.Command{
 		Use: "down <name>", Short: "stop the running VM", GroupID: groupRun,
-		Long: "Stops a sandbox brought up with bluebox up. Everything outside /data\n" +
+		Long: "Stops a sandbox brought up with box up. Everything outside /data\n" +
 			"is discarded with the VM.",
 		Args:              cobra.ExactArgs(1),
 		ValidArgsFunction: completeName,
@@ -113,7 +113,7 @@ func downCmd() *cobra.Command {
 }
 
 // agentCmd is the guest side of up/exec. It is hidden: it only makes sense as
-// the main process of a microVM that bluebox up started.
+// the main process of a microVM that box up started.
 func agentCmd() *cobra.Command {
 	var vsock bool
 	c := &cobra.Command{
@@ -189,13 +189,13 @@ func mcpCmd() *cobra.Command {
 	var allowApply bool
 	c := &cobra.Command{
 		Use: "mcp", Short: "MCP server for AI agents (stdio)", GroupID: groupRun,
-		Long: "Serves bluebox over the Model Context Protocol on stdin and stdout,\n" +
+		Long: "Serves box over the Model Context Protocol on stdin and stdout,\n" +
 			"for Claude Code, Claude Desktop, Cursor and other MCP clients. Tools:\n" +
 			"list_sandboxes, run, up, exec, down, read_file, write_file, fork,\n" +
 			"diff, discard. Sandboxes themselves are created and built with the CLI.\n\n" +
 			"apply is not offered unless --allow-apply is given: forks exist so a\n" +
 			"human reviews an agent's work before it reaches real data.\n\n" +
-			"  claude mcp add bluebox -- bluebox mcp",
+			"  claude mcp add box -- box mcp",
 		Args:              cobra.NoArgs,
 		ValidArgsFunction: completeNothing,
 		RunE: func(*cobra.Command, []string) error {
@@ -211,7 +211,7 @@ func serveCmd() *cobra.Command {
 	var idle time.Duration
 	c := &cobra.Command{
 		Use: "serve", Short: "local API for the SDKs", GroupID: groupRun,
-		Long: "Serves the bluebox API on a Unix socket only you can open, for the\n" +
+		Long: "Serves the box API on a Unix socket only you can open, for the\n" +
 			"Python and Go SDKs. The SDKs start it themselves when it is not\n" +
 			"running, with an idle limit so it exits once unused.",
 		Args:              cobra.NoArgs,
@@ -227,7 +227,7 @@ func serveCmd() *cobra.Command {
 			return server.Serve(sock, Version, idle)
 		},
 	}
-	c.Flags().StringVar(&sock, "socket", "", "socket path (default ~/.bluebox/bluebox.sock)")
+	c.Flags().StringVar(&sock, "socket", "", "socket path (default ~/.box/box.sock)")
 	c.Flags().DurationVar(&idle, "idle", 0, "exit after this long without a request (0 = never)")
 	return c
 }
@@ -345,7 +345,7 @@ func refuseWithForks(name, what string) error {
 // the old directory mounted and would carry on writing to it unseen.
 func refuseWhileUp(name, what string) error {
 	if sandbox.IsUp(name) {
-		return fmt.Errorf("%s is up; bring it down before you %s: bluebox down %s", name, what, name)
+		return fmt.Errorf("%s is up; bring it down before you %s: box down %s", name, what, name)
 	}
 	return nil
 }

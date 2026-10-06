@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"bluebox/internal/sandbox"
+	"box/internal/sandbox"
 )
 
 // The token cache is what lets a run skip the double VM boot, so its
@@ -12,7 +12,7 @@ import (
 // any other identity (a changed runtime) is not, and a missing cache never
 // reads as verified.
 func TestIsolationCache(t *testing.T) {
-	t.Setenv("BLUEBOX_HOME", t.TempDir())
+	t.Setenv("BOX_HOME", t.TempDir())
 
 	if isolationCurrent("A") {
 		t.Fatal("empty cache must not read as verified")
@@ -37,7 +37,7 @@ func TestIsolationCache(t *testing.T) {
 }
 
 func TestTokenRoundTrip(t *testing.T) {
-	t.Setenv("BLUEBOX_HOME", t.TempDir())
+	t.Setenv("BOX_HOME", t.TempDir())
 	storeToken("id-123", "guest-k", "base-k")
 	got, ok := loadToken()
 	if !ok {
@@ -54,7 +54,7 @@ func TestTokenRoundTrip(t *testing.T) {
 // A corrupt cache file must degrade to "not verified" (forcing a fresh check),
 // never crash or falsely clear a run.
 func TestCorruptTokenIsNotCurrent(t *testing.T) {
-	t.Setenv("BLUEBOX_HOME", t.TempDir())
+	t.Setenv("BOX_HOME", t.TempDir())
 	p, err := sandbox.VerifyCachePath()
 	if err != nil {
 		t.Fatal(err)

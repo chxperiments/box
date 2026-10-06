@@ -12,8 +12,8 @@ import (
 	"strings"
 	"time"
 
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
 // CheckIsolation boots the sandbox two ways and confirms the guest kernel
@@ -22,7 +22,7 @@ import (
 // silent pass. Comparing against the baseline rather than the host's own uname
 // is what keeps this honest on macOS, where every container kernel differs from
 // the Darwin host whether or not a microVM is involved.
-func CheckIsolation(name string, s bluefile.Spec) (guest, baseline string, err error) {
+func CheckIsolation(name string, s boxfile.Spec) (guest, baseline string, err error) {
 	guest, err = GuestKernel(name, s)
 	if err != nil {
 		return "", "", fmt.Errorf("could not start the sandbox (is the image built?): %w", err)
@@ -157,7 +157,7 @@ func MarkVerified(guest, baseline string) {
 // cleared; a changed runtime forces a fresh check and a failed check refuses
 // the run rather than executing on a shared kernel. It returns fresh=true when
 // it had to re-verify, so the caller can explain the pause.
-func EnsureIsolated(name string, s bluefile.Spec) (fresh bool, err error) {
+func EnsureIsolated(name string, s boxfile.Spec) (fresh bool, err error) {
 	id, err := RuntimeIdentity()
 	if err != nil {
 		return false, err

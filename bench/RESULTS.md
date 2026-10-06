@@ -12,9 +12,9 @@ tool                         isolation                 noop median  python media
 host process                 none                          0.78 ms       19.42 ms    27.44 ms
 podman + runc                container                   447.61 ms      490.04 ms   589.06 ms
 podman + krun                microVM                    1487.67 ms     1834.47 ms  1936.43 ms
-bluebox run (cold)           microVM                    1357.34 ms     1477.01 ms  1637.08 ms
-bluebox run (warm: 2)        microVM, fresh per run       44.42 ms      151.08 ms   188.34 ms
-bluebox exec (up)            microVM, persistent          14.84 ms       56.42 ms    68.26 ms
+box run (cold)           microVM                    1357.34 ms     1477.01 ms  1637.08 ms
+box run (warm: 2)        microVM, fresh per run       44.42 ms      151.08 ms   188.34 ms
+box exec (up)            microVM, persistent          14.84 ms       56.42 ms    68.26 ms
 monty, new session           interpreter subprocess        0.49 ms       12.19 ms    13.57 ms
 monty, same session          interpreter subprocess        0.21 ms       12.07 ms    13.64 ms
 ```

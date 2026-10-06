@@ -8,24 +8,24 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
-// makeSandboxes creates real sandboxes under a temporary bluebox home, so the
+// makeSandboxes creates real sandboxes under a temporary box home, so the
 // completions are read the same way the running CLI reads them.
 func makeSandboxes(t *testing.T, names ...string) {
 	t.Helper()
-	t.Setenv("BLUEBOX_HOME", t.TempDir())
+	t.Setenv("BOX_HOME", t.TempDir())
 	for _, n := range names {
 		if _, err := sandbox.Create(n); err != nil {
 			t.Fatal(err)
 		}
-		p, err := sandbox.BluefilePath(n)
+		p, err := sandbox.BoxfilePath(n)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(p, []byte(bluefile.Template), 0o644); err != nil {
+		if err := os.WriteFile(p, []byte(boxfile.Template), 0o644); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -55,10 +55,10 @@ func TestCompleteName(t *testing.T) {
 	}
 }
 
-// With no bluebox home to read, completion stays silent rather than failing
+// With no box home to read, completion stays silent rather than failing
 // the shell or falling back to offering file names.
 func TestCompleteNameWithoutAnySandboxes(t *testing.T) {
-	t.Setenv("BLUEBOX_HOME", t.TempDir())
+	t.Setenv("BOX_HOME", t.TempDir())
 	got, d := completeName(nil, nil, "")
 	if len(got) != 0 || d != cobra.ShellCompDirectiveNoFileComp {
 		t.Errorf("completeName = %v %v, want none and NoFileComp", got, d)

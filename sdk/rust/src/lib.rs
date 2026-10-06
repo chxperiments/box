@@ -1,13 +1,13 @@
-//! Rust SDK for bluebox: run code in microVM sandboxes that each have their
+//! Rust SDK for box: run code in microVM sandboxes that each have their
 //! own kernel.
 //!
-//! The SDK talks to `bluebox serve` over a Unix socket only you can open,
+//! The SDK talks to `box serve` over a Unix socket only you can open,
 //! and starts the server the first time it is needed. Calls are blocking.
 //!
 //! ```no_run
-//! use bluebox::{Command, Sandbox};
+//! use sdbox::{Command, Sandbox};
 //!
-//! # fn main() -> Result<(), bluebox::Error> {
+//! # fn main() -> Result<(), sdbox::Error> {
 //! let sb = Sandbox::new("agent")?;
 //! sb.up()?;
 //! let out = sb.exec(Command::new(["python3", "-c", "print(6*7)"]))?;
@@ -66,15 +66,15 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Error::NotFound(m) | Error::NotUp(m) | Error::NoServer(m) | Error::Protocol(m) => {
-                write!(f, "bluebox: {m}")
+                write!(f, "box: {m}")
             }
-            Error::Api { message, .. } => write!(f, "bluebox: {message}"),
+            Error::Api { message, .. } => write!(f, "box: {message}"),
             Error::CommandFailed(o) => {
                 let tail = o.stderr_text();
                 let tail = tail.trim().lines().last().unwrap_or("").to_string();
-                write!(f, "bluebox: exit {}: {tail}", o.exit_code)
+                write!(f, "box: exit {}: {tail}", o.exit_code)
             }
-            Error::Io(e) => write!(f, "bluebox: {e}"),
+            Error::Io(e) => write!(f, "box: {e}"),
         }
     }
 }
@@ -122,7 +122,7 @@ impl Command {
         self
     }
 
-    /// Seconds, overriding the Bluefile's `timeout_seconds`. A timed-out
+    /// Seconds, overriding the Boxfile's `timeout_seconds`. A timed-out
     /// command exits 124.
     pub fn timeout(mut self, seconds: u32) -> Self {
         self.timeout = Some(seconds);
@@ -189,7 +189,7 @@ pub struct SandboxInfo {
     pub error: Option<String>,
 }
 
-/// A connection to the local bluebox server.
+/// A connection to the local box server.
 #[derive(Debug, Clone)]
 pub struct Client {
     socket: PathBuf,
@@ -203,7 +203,7 @@ impl Client {
     pub fn new() -> Result<Self> {
         Ok(Client {
             socket: default_socket()?,
-            binary: "bluebox".into(),
+            binary: "box".into(),
             autostart: true,
             idle: "15m".into(),
         })
@@ -213,7 +213,7 @@ impl Client {
         self.socket = path.into();
         self
     }
-    /// The bluebox executable used to start the server.
+    /// The box executable used to start the server.
     pub fn with_binary(mut self, binary: impl Into<String>) -> Self {
         self.binary = binary.into();
         self
@@ -250,7 +250,7 @@ impl Client {
             }
             Err(e) if no_server(&e) => {
                 return Err(Error::NoServer(format!(
-                    "server not running at {}; start it: bluebox serve",
+                    "server not running at {}; start it: box serve",
                     self.socket.display()
                 )))
             }
@@ -312,7 +312,7 @@ fn no_server(e: &io::Error) -> bool {
 }
 
 /// One sandbox, by name. Create and build it first with the CLI:
-/// `bluebox new agent --from tiny-python && bluebox build agent`.
+/// `box new agent --from tiny-python && box build agent`.
 #[derive(Debug, Clone)]
 pub struct Sandbox {
     name: String,
@@ -353,7 +353,7 @@ impl Sandbox {
     }
 
     /// Run in a fresh microVM that is destroyed afterwards. With `warm:` in
-    /// the Bluefile it comes from the pool and starts in milliseconds.
+    /// the Boxfile it comes from the pool and starts in milliseconds.
     pub fn run(&self, cmd: impl Into<Command>) -> Result<Output> {
         let mut cmd = cmd.into();
         cmd.stdin = None;
@@ -440,31 +440,31 @@ impl Sandbox {
     }
 }
 
-/// Mirrors the Go server's choice: the bluebox root, or the per-user
+/// Mirrors the Go server's choice: the box root, or the per-user
 /// runtime directory when that path is too long for a Unix socket. Never a
 /// shared directory, where another user could listen first.
 pub fn default_socket() -> Result<PathBuf> {
     use sha2::{Digest, Sha256};
-    let home = match std::env::var("BLUEBOX_HOME") {
+    let home = match std::env::var("BOX_HOME") {
         Ok(h) if !h.is_empty() => h,
         _ => {
             let h = std::env::var("HOME").map_err(|_| Error::Protocol("HOME is not set".into()))?;
-            format!("{h}/.bluebox")
+            format!("{h}/.box")
         }
     };
-    let path = PathBuf::from(&home).join("bluebox.sock");
+    let path = PathBuf::from(&home).join("box.sock");
     if path.as_os_str().len() <= 103 {
         return Ok(path);
     }
     let run = std::env::var("XDG_RUNTIME_DIR").map_err(|_| {
         Error::Protocol(format!(
-            "socket path {} is too long; shorten BLUEBOX_HOME or set XDG_RUNTIME_DIR",
+            "socket path {} is too long; shorten BOX_HOME or set XDG_RUNTIME_DIR",
             path.display()
         ))
     })?;
     let digest = Sha256::digest(home.as_bytes());
     let hex: String = digest.iter().take(6).map(|b| format!("{b:02x}")).collect();
-    Ok(PathBuf::from(run).join(format!("bluebox-{hex}.sock")))
+    Ok(PathBuf::from(run).join(format!("box-{hex}.sock")))
 }
 
 /// One HTTP/1.1 request over the Unix socket. The connection is closed
@@ -474,7 +474,7 @@ fn http(socket: &Path, method: &str, path: &str, body: &str) -> io::Result<(u16,
     let mut s = UnixStream::connect(socket)?;
     write!(
         s,
-        "{method} {path} HTTP/1.1\r\nHost: bluebox\r\nContent-Type: application/json\r\n\
+        "{method} {path} HTTP/1.1\r\nHost: box\r\nContent-Type: application/json\r\n\
          Content-Length: {}\r\nConnection: close\r\n\r\n{body}",
         body.len()
     )?;
@@ -555,24 +555,24 @@ mod tests {
     }
 
     #[test]
-    fn socket_path_follows_bluebox_home_and_falls_back() {
-        std::env::set_var("BLUEBOX_HOME", "/tmp/short");
+    fn socket_path_follows_box_home_and_falls_back() {
+        std::env::set_var("BOX_HOME", "/tmp/short");
         assert_eq!(
             default_socket().unwrap(),
-            PathBuf::from("/tmp/short/bluebox.sock")
+            PathBuf::from("/tmp/short/box.sock")
         );
-        std::env::set_var("BLUEBOX_HOME", format!("/{}", "x".repeat(120)));
+        std::env::set_var("BOX_HOME", format!("/{}", "x".repeat(120)));
         std::env::set_var("XDG_RUNTIME_DIR", "/run/user/1000");
         let p = default_socket().unwrap().display().to_string();
         assert!(
-            p.starts_with("/run/user/1000/bluebox-")
+            p.starts_with("/run/user/1000/box-")
                 && p.ends_with(".sock")
-                && p.len() == "/run/user/1000/bluebox-".len() + 12 + 5,
+                && p.len() == "/run/user/1000/box-".len() + 12 + 5,
             "{p}"
         );
         std::env::remove_var("XDG_RUNTIME_DIR");
         assert!(default_socket().is_err());
-        std::env::remove_var("BLUEBOX_HOME");
+        std::env::remove_var("BOX_HOME");
     }
 
     #[test]
@@ -586,6 +586,6 @@ mod tests {
             truncated: false,
         };
         let e = o.check().unwrap_err();
-        assert_eq!(e.to_string(), "bluebox: exit 3: boom");
+        assert_eq!(e.to_string(), "box: exit 3: boom");
     }
 }

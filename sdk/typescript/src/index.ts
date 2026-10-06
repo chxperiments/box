@@ -1,11 +1,11 @@
 /**
- * TypeScript SDK for bluebox: microVM sandboxes that start in milliseconds.
+ * TypeScript SDK for box: microVM sandboxes that start in milliseconds.
  *
  * Every sandbox is a microVM with its own kernel. The SDK talks to
- * `bluebox serve` over a Unix socket only you can open, and starts it the
+ * `box serve` over a Unix socket only you can open, and starts it the
  * first time it is needed. Node 18+, no dependencies.
  *
- *   import { Sandbox } from "bluebox-sdk";
+ *   import { Sandbox } from "box-sdk";
  *
  *   const sb = new Sandbox("agent");
  *   await sb.up();                                   // boot once
@@ -28,7 +28,7 @@ import { execFileSync } from "node:child_process";
 export type Command = string | readonly string[];
 
 /** The server refused or could not carry out a request. */
-export class BlueboxError extends Error {
+export class BoxError extends Error {
   constructor(
     message: string,
     /** Machine-readable: no_sandbox, not_up, bad_name, bad_request, no_server, internal. */
@@ -36,12 +36,12 @@ export class BlueboxError extends Error {
     public readonly status: number = 0,
   ) {
     super(message);
-    this.name = "BlueboxError";
+    this.name = "BoxError";
   }
 }
 
 /** No sandbox by that name. */
-export class NotFound extends BlueboxError {
+export class NotFound extends BoxError {
   constructor(message: string, status = 404) {
     super(message, "no_sandbox", status);
     this.name = "NotFound";
@@ -49,7 +49,7 @@ export class NotFound extends BlueboxError {
 }
 
 /** exec was called on a sandbox that is not up. */
-export class NotUp extends BlueboxError {
+export class NotUp extends BoxError {
   constructor(message: string, status = 409) {
     super(message, "not_up", status);
     this.name = "NotUp";
@@ -57,7 +57,7 @@ export class NotUp extends BlueboxError {
 }
 
 /** Thrown by Result.check() for a command that exited non-zero. */
-export class CommandFailed extends BlueboxError {
+export class CommandFailed extends BoxError {
   constructor(public readonly result: Result) {
     const tail = result.stderrText.trim().split("\n").pop() ?? "";
     super(`exit ${result.exitCode}: ${tail}`, "command_failed");
@@ -111,32 +111,32 @@ export interface SandboxInfo {
 export interface ClientOptions {
   /** Path to the server socket. Default: the same path the CLI uses. */
   socket?: string;
-  /** The bluebox executable, used to start the server. Default: "bluebox" on PATH. */
+  /** The box executable, used to start the server. Default: "box" on PATH. */
   binary?: string;
-  /** Start `bluebox serve` when nothing is listening. Default true. */
+  /** Start `box serve` when nothing is listening. Default true. */
   autostart?: boolean;
   /** How long an auto-started server lingers unused. Default "15m". */
   idle?: string;
 }
 
 /**
- * Mirrors sandbox.SocketPath in the Go server: the bluebox root, or the
+ * Mirrors sandbox.SocketPath in the Go server: the box root, or the
  * per-user runtime dir when that path is too long for a Unix socket. Never a
  * shared directory, where another user could listen first.
  */
 export function defaultSocket(): string {
-  const home = process.env.BLUEBOX_HOME || join(homedir(), ".bluebox");
-  const path = join(home, "bluebox.sock");
+  const home = process.env.BOX_HOME || join(homedir(), ".box");
+  const path = join(home, "box.sock");
   if (Buffer.byteLength(path) <= 103) return path;
   const run = process.env.XDG_RUNTIME_DIR;
   if (!run) {
-    throw new BlueboxError(
-      `socket path ${path} is too long for a Unix socket; shorten BLUEBOX_HOME or set XDG_RUNTIME_DIR`,
+    throw new BoxError(
+      `socket path ${path} is too long for a Unix socket; shorten BOX_HOME or set XDG_RUNTIME_DIR`,
       "bad_socket",
     );
   }
   const digest = createHash("sha256").update(home).digest("hex").slice(0, 12);
-  return join(run, `bluebox-${digest}.sock`);
+  return join(run, `box-${digest}.sock`);
 }
 
 function toArgv(cmd: Command): string[] {
@@ -150,7 +150,7 @@ function toArgv(cmd: Command): string[] {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-/** A connection to the local bluebox server. */
+/** A connection to the local box server. */
 export class Client {
   readonly socket: string;
   readonly binary: string;
@@ -159,7 +159,7 @@ export class Client {
 
   constructor(opts: ClientOptions = {}) {
     this.socket = opts.socket ?? defaultSocket();
-    this.binary = opts.binary ?? "bluebox";
+    this.binary = opts.binary ?? "box";
     this.autostart = opts.autostart ?? true;
     this.idle = opts.idle ?? "15m";
   }
@@ -173,7 +173,7 @@ export class Client {
           socketPath: this.socket,
           method,
           path,
-          headers: { "Content-Type": "application/json", Host: "bluebox" },
+          headers: { "Content-Type": "application/json", Host: "box" },
         },
         (res) => {
           const chunks: Buffer[] = [];
@@ -202,8 +202,8 @@ export class Client {
           continue;
         }
         if (code === "ENOENT" || code === "ECONNREFUSED") {
-          throw new BlueboxError(
-            `bluebox server not running at ${this.socket}; start it: bluebox serve`,
+          throw new BoxError(
+            `box server not running at ${this.socket}; start it: box serve`,
             "no_server",
           );
         }
@@ -221,7 +221,7 @@ export class Client {
         case "not_up":
           throw new NotUp(message, status);
         default:
-          throw new BlueboxError(message, e.code ?? "internal", status);
+          throw new BoxError(message, e.code ?? "internal", status);
       }
     }
     return decoded as T;
@@ -239,7 +239,7 @@ export class Client {
       if (await this.canConnect()) return;
       await sleep(20);
     }
-    throw new BlueboxError(
+    throw new BoxError(
       `started ${this.binary} serve but it never listened on ${this.socket}`,
       "no_server",
     );
@@ -275,14 +275,14 @@ export class Client {
 export interface ExecOptions {
   /** Forwarded to the command's stdin. */
   stdin?: Buffer | string;
-  /** Seconds; overrides the Bluefile's timeout_seconds. A timed-out command exits 124. */
+  /** Seconds; overrides the Boxfile's timeout_seconds. A timed-out command exits 124. */
   timeout?: number;
 }
 
 /**
  * One sandbox, by name. Create and build it first with the CLI:
  *
- *   bluebox new agent --from tiny-python && bluebox build agent
+ *   box new agent --from tiny-python && box build agent
  */
 export class Sandbox {
   readonly client: Client;
@@ -339,7 +339,7 @@ export class Sandbox {
 
   /**
    * Run in a fresh microVM that is destroyed afterwards. With `warm:` in the
-   * Bluefile it comes from the pool and starts in milliseconds. Stdin is not
+   * Boxfile it comes from the pool and starts in milliseconds. Stdin is not
    * forwarded to a run.
    */
   run(cmd: Command, opts: Pick<ExecOptions, "timeout"> = {}): Promise<Result> {
@@ -397,8 +397,8 @@ export class Sandbox {
   }
 }
 
-/** The installed bluebox's version, or null if it is not on PATH. */
-export function cliVersion(binary = "bluebox"): string | null {
+/** The installed box's version, or null if it is not on PATH. */
+export function cliVersion(binary = "box"): string | null {
   try {
     return execFileSync(binary, ["--version"], { encoding: "utf8" }).trim();
   } catch {

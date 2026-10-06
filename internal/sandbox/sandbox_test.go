@@ -29,7 +29,7 @@ func TestValidName(t *testing.T) {
 }
 
 // Every filesystem sink derives its path through these builders, so a
-// rejected name makes deletion, moving and creation outside the bluebox
+// rejected name makes deletion, moving and creation outside the box
 // root unreachable.
 func TestPathBuildersRejectUnsafeNames(t *testing.T) {
 	t.Setenv("HOME", t.TempDir()) // keep the assertions independent of the real home
@@ -107,7 +107,7 @@ func TestCheckMember(t *testing.T) {
 // setup makes a sandbox with data in it and returns its data directory.
 func setup(t *testing.T, name string) string {
 	t.Helper()
-	t.Setenv("BLUEBOX_HOME", t.TempDir())
+	t.Setenv("BOX_HOME", t.TempDir())
 	if _, err := Create(name); err != nil {
 		t.Fatal(err)
 	}
@@ -332,16 +332,16 @@ func TestSnapshotsOrderedByTimeNotName(t *testing.T) {
 
 func TestSocketPathFallsBackForLongHomes(t *testing.T) {
 	short := t.TempDir()
-	t.Setenv("BLUEBOX_HOME", short)
-	if p, err := SocketPath(); err != nil || p != filepath.Join(short, "bluebox.sock") {
+	t.Setenv("BOX_HOME", short)
+	if p, err := SocketPath(); err != nil || p != filepath.Join(short, "box.sock") {
 		t.Fatalf("short home: %q, %v", p, err)
 	}
 
 	long := "/" + strings.Repeat("x", 120)
-	t.Setenv("BLUEBOX_HOME", long)
+	t.Setenv("BOX_HOME", long)
 	t.Setenv("XDG_RUNTIME_DIR", "/run/user/1000")
 	p, err := SocketPath()
-	if err != nil || !strings.HasPrefix(p, "/run/user/1000/bluebox-") || len(p) > maxSocketPath {
+	if err != nil || !strings.HasPrefix(p, "/run/user/1000/box-") || len(p) > maxSocketPath {
 		t.Fatalf("long home: %q, %v", p, err)
 	}
 
@@ -352,10 +352,10 @@ func TestSocketPathFallsBackForLongHomes(t *testing.T) {
 	}
 }
 
-// writeBluefile makes setup's sandbox a defined one, which Rename requires.
-func writeBluefile(t *testing.T, name string) {
+// writeBoxfile makes setup's sandbox a defined one, which Rename requires.
+func writeBoxfile(t *testing.T, name string) {
 	t.Helper()
-	p, err := BluefilePath(name)
+	p, err := BoxfilePath(name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -369,7 +369,7 @@ func writeBluefile(t *testing.T, name string) {
 // later sandbox that reuses that name.
 func TestRenameMovesSnapshots(t *testing.T) {
 	setup(t, "work")
-	writeBluefile(t, "work")
+	writeBoxfile(t, "work")
 	if _, err := Snapshot("work", "before"); err != nil {
 		t.Fatal(err)
 	}
@@ -403,7 +403,7 @@ func TestRenameMovesSnapshots(t *testing.T) {
 // halfway: the rename is refused before anything moves.
 func TestRenameRefusesLeftoverDestination(t *testing.T) {
 	data := setup(t, "work")
-	writeBluefile(t, "work")
+	writeBoxfile(t, "work")
 	leftover, err := SnapshotsDir("proj")
 	if err != nil {
 		t.Fatal(err)

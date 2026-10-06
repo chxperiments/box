@@ -6,17 +6,17 @@ import (
 	"strings"
 	"testing"
 
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
 // vmArgs builds every -v in one place, so the declarative mounts from the
-// Bluefile must show up there, after /data, with their mode attached.
+// Boxfile must show up there, after /data, with their mode attached.
 func TestVmArgsMounts(t *testing.T) {
-	t.Setenv("BLUEBOX_HOME", t.TempDir())
+	t.Setenv("BOX_HOME", t.TempDir())
 
-	s := bluefile.Default
-	s.Mounts = []bluefile.Mount{
+	s := boxfile.Default
+	s.Mounts = []boxfile.Mount{
 		{Host: "/tmp/inputs", Guest: "/inputs", Mode: "ro"},
 		{Host: "/tmp/out", Guest: "/out", Mode: "rw"},
 		{Host: "/tmp/unset", Guest: "/unset"}, // parse normally defaults this to ro
@@ -43,8 +43,8 @@ func TestVmArgsMounts(t *testing.T) {
 }
 
 func TestVmArgsWithoutMounts(t *testing.T) {
-	t.Setenv("BLUEBOX_HOME", t.TempDir())
-	args, err := vmArgs("devbox", bluefile.Default, false, true)
+	t.Setenv("BOX_HOME", t.TempDir())
+	args, err := vmArgs("devbox", boxfile.Default, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,8 +63,8 @@ func TestVmArgsWithoutMounts(t *testing.T) {
 // gives the guest whatever its VMM can do, so these flags are the boundary
 // behind a libkrun escape and must never silently drop out of vmArgs.
 func TestVmArgsConfineTheVMM(t *testing.T) {
-	t.Setenv("BLUEBOX_HOME", t.TempDir())
-	s := bluefile.Default
+	t.Setenv("BOX_HOME", t.TempDir())
+	s := boxfile.Default
 	s.RAMMiB = 1024
 	for _, krun := range []bool{true, false} {
 		args, err := vmArgs("devbox", s, false, krun)
@@ -92,8 +92,8 @@ func TestVmArgsConfineTheVMM(t *testing.T) {
 // The sandbox image is only ever the locally built one: a missing image must
 // fail rather than be resolved and pulled from a registry.
 func TestVmArgsNeverPulls(t *testing.T) {
-	t.Setenv("BLUEBOX_HOME", t.TempDir())
-	args, err := vmArgs("devbox", bluefile.Default, false, true)
+	t.Setenv("BOX_HOME", t.TempDir())
+	args, err := vmArgs("devbox", boxfile.Default, false, true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -112,12 +112,12 @@ func TestVmArgsNeverPulls(t *testing.T) {
 }
 
 // mountTree lays out a host directory tree under a temp dir and points
-// BLUEBOX_HOME at another part of it.
+// BOX_HOME at another part of it.
 func mountTree(t *testing.T) (root, home string) {
 	t.Helper()
 	root = t.TempDir()
 	home = filepath.Join(root, "bbhome")
-	t.Setenv("BLUEBOX_HOME", home)
+	t.Setenv("BOX_HOME", home)
 	for _, d := range []string{"proj/config", "secret", "other", "bbhome/data/devbox"} {
 		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
 			t.Fatal(err)
@@ -126,9 +126,9 @@ func mountTree(t *testing.T) (root, home string) {
 	return root, home
 }
 
-func mountErr(t *testing.T, mounts ...bluefile.Mount) error {
+func mountErr(t *testing.T, mounts ...boxfile.Mount) error {
 	t.Helper()
-	s := bluefile.Default
+	s := boxfile.Default
 	s.Mounts = mounts
 	_, err := vmArgs("devbox", s, false, true)
 	return err
@@ -141,8 +141,8 @@ func mountErr(t *testing.T, mounts ...bluefile.Mount) error {
 func TestVmArgsRefusesMountInsideRwMount(t *testing.T) {
 	root, _ := mountTree(t)
 	proj, config := filepath.Join(root, "proj"), filepath.Join(root, "proj", "config")
-	rw := bluefile.Mount{Host: proj, Guest: "/work", Mode: "rw"}
-	for _, inner := range []bluefile.Mount{
+	rw := boxfile.Mount{Host: proj, Guest: "/work", Mode: "rw"}
+	for _, inner := range []boxfile.Mount{
 		{Host: config, Guest: "/config", Mode: "ro"},
 		{Host: config, Guest: "/config", Mode: "rw"},
 		{Host: proj, Guest: "/again", Mode: "ro"}, // the same tree twice
@@ -159,7 +159,7 @@ func TestVmArgsRefusesMountInsideRwMount(t *testing.T) {
 	if err := os.Symlink("../secret", config); err != nil {
 		t.Fatal(err)
 	}
-	if err := mountErr(t, rw, bluefile.Mount{Host: config, Guest: "/config", Mode: "ro"}); err == nil {
+	if err := mountErr(t, rw, boxfile.Mount{Host: config, Guest: "/config", Mode: "ro"}); err == nil {
 		t.Error("a mount already redirected through a guest-planted symlink should be refused")
 	}
 }
@@ -168,13 +168,13 @@ func TestVmArgsRefusesMountInsideRwMount(t *testing.T) {
 // and an rw mount may not contain this sandbox's /data.
 func TestVmArgsRefusesMountsAroundData(t *testing.T) {
 	root, home := mountTree(t)
-	if err := mountErr(t, bluefile.Mount{Host: filepath.Join(home, "data", "devbox"), Guest: "/x", Mode: "ro"}); err == nil {
-		t.Error("a mount under bluebox's data directory should be refused")
+	if err := mountErr(t, boxfile.Mount{Host: filepath.Join(home, "data", "devbox"), Guest: "/x", Mode: "ro"}); err == nil {
+		t.Error("a mount under box's data directory should be refused")
 	}
-	if err := mountErr(t, bluefile.Mount{Host: root, Guest: "/x", Mode: "rw"}); err == nil {
+	if err := mountErr(t, boxfile.Mount{Host: root, Guest: "/x", Mode: "rw"}); err == nil {
 		t.Error("an rw mount containing /data should be refused")
 	}
-	if err := mountErr(t, bluefile.Mount{Host: root, Guest: "/x", Mode: "ro"}); err != nil {
+	if err := mountErr(t, boxfile.Mount{Host: root, Guest: "/x", Mode: "ro"}); err != nil {
 		t.Errorf("a ro mount containing /data cannot redirect anything: %v", err)
 	}
 }
@@ -188,8 +188,8 @@ func TestVmArgsRefusesNestingThroughHostSymlink(t *testing.T) {
 		t.Fatal(err)
 	}
 	err := mountErr(t,
-		bluefile.Mount{Host: alias, Guest: "/work", Mode: "rw"},
-		bluefile.Mount{Host: filepath.Join(root, "proj", "config"), Guest: "/config", Mode: "ro"},
+		boxfile.Mount{Host: alias, Guest: "/work", Mode: "rw"},
+		boxfile.Mount{Host: filepath.Join(root, "proj", "config"), Guest: "/config", Mode: "ro"},
 	)
 	if err == nil {
 		t.Error("nesting reached through a host symlink should be refused")
@@ -204,10 +204,10 @@ func TestVmArgsAllowsIndependentMounts(t *testing.T) {
 		t.Fatal(err)
 	}
 	err := mountErr(t,
-		bluefile.Mount{Host: filepath.Join(root, "proj"), Guest: "/work", Mode: "rw"},
-		bluefile.Mount{Host: filepath.Join(root, "proj-extra"), Guest: "/extra", Mode: "rw"},
-		bluefile.Mount{Host: filepath.Join(root, "other"), Guest: "/other", Mode: "ro"},
-		bluefile.Mount{Host: filepath.Join(root, "other", "sub"), Guest: "/sub", Mode: "ro"},
+		boxfile.Mount{Host: filepath.Join(root, "proj"), Guest: "/work", Mode: "rw"},
+		boxfile.Mount{Host: filepath.Join(root, "proj-extra"), Guest: "/extra", Mode: "rw"},
+		boxfile.Mount{Host: filepath.Join(root, "other"), Guest: "/other", Mode: "ro"},
+		boxfile.Mount{Host: filepath.Join(root, "other", "sub"), Guest: "/sub", Mode: "ro"},
 	)
 	if err != nil {
 		t.Errorf("independent mounts should be accepted: %v", err)

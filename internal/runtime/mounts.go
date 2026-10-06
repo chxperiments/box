@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
 // checkMountSources refuses a mount whose host path can be redirected by a
@@ -17,12 +17,12 @@ import (
 // declared guest path and mode. What the spec declares is then no longer
 // what the sandbox sees.
 //
-// The guest can write every sandbox's /data (~/.bluebox/data/*) and this
+// The guest can write every sandbox's /data (~/.box/data/*) and this
 // sandbox's rw mounts, so no mount source, including this sandbox's own
 // /data, may sit inside one of those. The check is about where a path sits,
 // not where it currently points, so it holds whatever symlinks a guest has
 // already planted. It runs on every boot, in vmArgs.
-func checkMountSources(name string, s bluefile.Spec) error {
+func checkMountSources(name string, s boxfile.Spec) error {
 	home, err := sandbox.Home()
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func checkMountSources(name string, s bluefile.Spec) error {
 		path, what string
 		mount      int // index into s.Mounts, or -1
 	}
-	writable := []tree{{filepath.Join(home, "data"), "bluebox's /data directories", -1}}
+	writable := []tree{{filepath.Join(home, "data"), "box's /data directories", -1}}
 	for i, m := range s.Mounts {
 		if m.Mode == "rw" {
 			writable = append(writable, tree{m.Host, "the rw mount of " + m.Host, i})

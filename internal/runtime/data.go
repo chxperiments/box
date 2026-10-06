@@ -6,8 +6,8 @@ import (
 	"os"
 	"os/exec"
 
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
 // ExportData streams a sandbox's /data as a tar archive to w. On the podman
@@ -15,12 +15,12 @@ import (
 // podman's namespace if a strict sandbox owns it); on the firecracker
 // backend it is a disk, read by the guest. Either way the archive is
 // untrusted, guest-written content, and must be unpacked with SafeUntar.
-func ExportData(name string, s bluefile.Spec, w io.Writer) error {
+func ExportData(name string, s boxfile.Spec, w io.Writer) error {
 	if sandbox.IsFork(name) {
 		return fmt.Errorf("%s is a fork; apply it and export its parent", name)
 	}
 	if s.Backend == "firecracker" {
-		return guestData(name, s, []string{"/.bluebox/bluebox", "__tarout", "/data"}, nil, w)
+		return guestData(name, s, []string{"/.box/box", "__tarout", "/data"}, nil, w)
 	}
 	data, err := sandbox.DataDir(name)
 	if err != nil {
@@ -34,12 +34,12 @@ func ExportData(name string, s bluefile.Spec, w io.Writer) error {
 
 // ImportData unpacks a tar archive from r into a sandbox's /data, merging
 // with what is there.
-func ImportData(name string, s bluefile.Spec, r io.Reader) error {
+func ImportData(name string, s boxfile.Spec, r io.Reader) error {
 	if sandbox.IsFork(name) {
 		return fmt.Errorf("%s is a fork; import into its parent", name)
 	}
 	if s.Backend == "firecracker" {
-		return guestData(name, s, []string{"/.bluebox/bluebox", "__tarin", "/data"}, r, io.Discard)
+		return guestData(name, s, []string{"/.box/box", "__tarin", "/data"}, r, io.Discard)
 	}
 	data, err := sandbox.DataDir(name)
 	if err != nil {
@@ -57,7 +57,7 @@ func ImportData(name string, s bluefile.Spec, r io.Reader) error {
 
 // guestData runs a tar helper inside the sandbox: in the running VM if it is
 // up, otherwise in a fresh one.
-func guestData(name string, s bluefile.Spec, argv []string, in io.Reader, out io.Writer) error {
+func guestData(name string, s boxfile.Spec, argv []string, in io.Reader, out io.Writer) error {
 	streams := Streams{Stdin: in, Stdout: out, Stderr: os.Stderr}
 	var err error
 	if sandbox.IsUp(name) {

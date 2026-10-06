@@ -1,4 +1,4 @@
-// Package sandbox owns the on-disk layout of bluebox sandboxes.
+// Package sandbox owns the on-disk layout of box sandboxes.
 package sandbox
 
 import (
@@ -16,7 +16,7 @@ import (
 )
 
 // nameRe keeps a sandbox name a single safe path component, so every path
-// derived from a name stays inside the bluebox root. The alphanumeric first
+// derived from a name stays inside the box root. The alphanumeric first
 // character rejects ".", ".." and hidden names in one stroke.
 var nameRe = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$`)
 
@@ -38,19 +38,19 @@ func ValidLabel(label string) error {
 	return nil
 }
 
-// Home is the bluebox root, overridable with BLUEBOX_HOME.
+// Home is the box root, overridable with BOX_HOME.
 func Home() (string, error) {
-	if h := os.Getenv("BLUEBOX_HOME"); h != "" {
+	if h := os.Getenv("BOX_HOME"); h != "" {
 		return h, nil
 	}
 	h, err := os.UserHomeDir()
 	if err != nil {
 		return "", fmt.Errorf("cannot determine home directory: %w", err)
 	}
-	return filepath.Join(h, ".bluebox"), nil
+	return filepath.Join(h, ".box"), nil
 }
 
-// Dir holds a sandbox's definition (its Bluefile and generated Containerfile).
+// Dir holds a sandbox's definition (its Boxfile and generated Containerfile).
 func Dir(name string) (string, error) {
 	if err := ValidName(name); err != nil {
 		return "", err
@@ -74,15 +74,15 @@ func DataDir(name string) (string, error) {
 	return filepath.Join(h, "data", name), nil
 }
 
-func BluefilePath(name string) (string, error) {
+func BoxfilePath(name string) (string, error) {
 	d, err := Dir(name)
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(d, "Bluefile"), nil
+	return filepath.Join(d, "Boxfile"), nil
 }
 
-// ContainerfilePath is a build artifact generated from the Bluefile.
+// ContainerfilePath is a build artifact generated from the Boxfile.
 func ContainerfilePath(name string) (string, error) {
 	d, err := Dir(name)
 	if err != nil {
@@ -108,11 +108,11 @@ func LogPath(name string) (string, error) {
 // ValidName, and podman itself rejects malformed refs loudly.
 //
 // The tag is fully qualified with localhost/, which is where podman stores a
-// locally built image anyway. A short name like bluebox/<name> would go
+// locally built image anyway. A short name like box/<name> would go
 // through registries.conf short-name resolution whenever the local image is
 // missing (never built, pruned, failed build), and could pull and run
-// someone else's bluebox/<name> image with /data and the rw mounts attached.
-func ImageTag(name string) string { return "localhost/bluebox/" + name + ":latest" }
+// someone else's box/<name> image with /data and the rw mounts attached.
+func ImageTag(name string) string { return "localhost/box/" + name + ":latest" }
 
 // VerifyCachePath holds the last successful isolation check, keyed on the
 // runtime's identity. It is not per-sandbox: isolation is a property of the
@@ -125,7 +125,7 @@ func VerifyCachePath() (string, error) {
 	return filepath.Join(h, "verify.json"), nil
 }
 
-// RunStatePath records a sandbox brought up with `bluebox up`: where its agent
+// RunStatePath records a sandbox brought up with `box up`: where its agent
 // listens and the token that admits a client. It exists only while the VM is
 // meant to be running.
 func RunStatePath(name string) (string, error) {
@@ -155,9 +155,9 @@ func IsUp(name string) bool {
 // (sun_path is 108 bytes on Linux, 104 on macOS, and includes the NUL).
 const maxSocketPath = 103
 
-// SocketPath is where `bluebox serve` listens for SDK clients: in the bluebox
+// SocketPath is where `box serve` listens for SDK clients: in the box
 // root, or -- when that path is too long for a socket -- in the per-user
-// runtime directory, named for the root so each BLUEBOX_HOME gets its own.
+// runtime directory, named for the root so each BOX_HOME gets its own.
 // It never falls back to a shared directory like /tmp, where another user
 // could create the path first and receive every command an SDK sends.
 // The Python SDK computes the same path; keep the two in step.
@@ -166,17 +166,17 @@ func SocketPath() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	p := filepath.Join(h, "bluebox.sock")
+	p := filepath.Join(h, "box.sock")
 	if len(p) <= maxSocketPath {
 		return p, nil
 	}
 	run := os.Getenv("XDG_RUNTIME_DIR")
 	if run == "" {
 		return "", fmt.Errorf("socket path %s is too long for a Unix socket; "+
-			"shorten BLUEBOX_HOME or set XDG_RUNTIME_DIR", p)
+			"shorten BOX_HOME or set XDG_RUNTIME_DIR", p)
 	}
 	sum := sha256.Sum256([]byte(h))
-	return filepath.Join(run, "bluebox-"+hex.EncodeToString(sum[:6])+".sock"), nil
+	return filepath.Join(run, "box-"+hex.EncodeToString(sum[:6])+".sock"), nil
 }
 
 // RootfsDir holds the krun backend's exported copies of a sandbox's image.
@@ -212,7 +212,7 @@ func PoolDir(name string) (string, error) {
 	return filepath.Join(h, "pool", name), nil
 }
 
-// AgentDir holds the copy of the bluebox binary that running sandboxes mount
+// AgentDir holds the copy of the box binary that running sandboxes mount
 // read-only and start as their agent.
 func AgentDir() (string, error) {
 	h, err := Home()
@@ -394,7 +394,7 @@ func SnapshotPath(name, ref string) (string, error) {
 			return "", err
 		}
 		if len(snaps) == 0 {
-			return "", fmt.Errorf("no snapshots for %q; take one with: bluebox snapshot %s", name, name)
+			return "", fmt.Errorf("no snapshots for %q; take one with: box snapshot %s", name, name)
 		}
 		return snaps[len(snaps)-1], nil // Snapshots sorts newest last
 	}
@@ -408,7 +408,7 @@ func SnapshotPath(name, ref string) (string, error) {
 				return cand, nil
 			}
 		}
-		return "", fmt.Errorf("no snapshot %q for %s; list them with: bluebox snapshot %s -l", ref, name, name)
+		return "", fmt.Errorf("no snapshot %q for %s; list them with: box snapshot %s -l", ref, name, name)
 	}
 	if fi, err := os.Stat(ref); err != nil || fi.IsDir() {
 		return "", fmt.Errorf("no archive at %s", ref)
@@ -536,7 +536,7 @@ func Rename(from, to string) error {
 		return fmt.Errorf("sandbox %q already exists", to)
 	}
 	paths := []func(string) (string, error){Dir, DataDir, LogPath, SnapshotsDir}
-	// Exists only looks for a Bluefile, so data or snapshots left by an
+	// Exists only looks for a Boxfile, so data or snapshots left by an
 	// earlier sandbox of the target name (destroy keeps /data by default)
 	// would otherwise be silently adopted, or make a rename fail halfway.
 	// Refuse before anything moves.
@@ -573,7 +573,7 @@ func Rename(from, to string) error {
 
 // Exists reports whether a sandbox has been created.
 func Exists(name string) bool {
-	p, err := BluefilePath(name)
+	p, err := BoxfilePath(name)
 	if err != nil {
 		return false
 	}

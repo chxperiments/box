@@ -8,7 +8,7 @@
 #
 # Run Floci in its own container/sandbox or on the host, then here:
 #
-#   bluebox shell lab-aws
+#   box shell lab-aws
 #   cp /path/to/examples/lab-aws/main.tf /data && cd /data
 #   terraform init && terraform apply
 #   aws s3 ls

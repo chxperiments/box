@@ -1,4 +1,4 @@
-module bluebox
+module box
 
 go 1.26.0
 

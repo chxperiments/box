@@ -3,7 +3,7 @@
 # the microVM -- verified end to end. Getting there needs a few settings the
 # minimal guest kernel forces, all handled by the baked-in `start-cluster`:
 #
-#   bluebox shell k8s
+#   box shell k8s
 #   start-cluster &          # k3s comes up in ~15s
 #   k3s kubectl get nodes
 #   k3s kubectl run web --image=nginx:alpine --overrides='{"spec":{"hostNetwork":true}}'

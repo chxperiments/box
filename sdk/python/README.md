@@ -1,15 +1,15 @@
-# bluebox Python SDK
+# box Python SDK
 
 Run code in microVM sandboxes that each have their own kernel, from Python.
 No dependencies beyond the standard library.
 
 ```sh
-pip install ./sdk/python        # from a bluebox checkout
-bluebox new agent --from tiny-python && bluebox build agent
+pip install ./sdk/python        # from a box checkout
+box new agent --from tiny-python && box build agent
 ```
 
 ```python
-from bluebox import Sandbox
+from sdbox import Sandbox
 
 # A persistent microVM: up on enter, down on exit. ~10ms per exec.
 with Sandbox("agent") as sb:
@@ -18,7 +18,7 @@ with Sandbox("agent") as sb:
     print(r.stdout_text, r.exit_code, r.duration_ms)
 
 # A fresh microVM per call, destroyed afterwards. With `warm: 2` in the
-# Bluefile it comes from a pool of booted VMs and starts in ~20-45ms.
+# Boxfile it comes from a pool of booted VMs and starts in ~20-45ms.
 r = Sandbox("agent").run("python3 -c 'print(6 * 7)'")
 r.check()   # raises CommandFailed on a non-zero exit
 ```
@@ -37,10 +37,10 @@ r.check()   # raises CommandFailed on a non-zero exit
 (`["ls", "-la"]`, no shell). A non-zero exit returns a `Result`; it is not
 an exception. A timeout exits `124` with `timed_out=True`.
 
-**How it connects:** the SDK talks to `bluebox serve` over a Unix socket that
+**How it connects:** the SDK talks to `box serve` over a Unix socket that
 only your user can open, and starts the server the first time it is needed.
 An auto-started server exits after 15 minutes unused, and steps aside once
-idle when bluebox is upgraded.
+idle when box is upgraded.
 
 **Files:** `write_file` and `read_file` run inside the guest, not on the host,
 so a path or symlink the sandbox controls can never redirect a write onto a

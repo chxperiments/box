@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bluebox/internal/sandbox"
+	"box/internal/sandbox"
 )
 
 // matching filters candidates by what has been typed so far. Cobra filters its
@@ -22,7 +22,7 @@ func matching(candidates []string, prefix string) []string {
 	return out
 }
 
-// completeName offers the defined sandboxes. Names are the one bluebox
+// completeName offers the defined sandboxes. Names are the one box
 // argument a shell cannot guess, and they are read from disk at completion
 // time, so a sandbox created in another terminal completes immediately
 // without re-sourcing anything.

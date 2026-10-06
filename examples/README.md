@@ -1,14 +1,14 @@
 # Examples
 
-Ready-to-use Bluefiles. Each directory is one sandbox.
+Ready-to-use Boxfiles. Each directory is one sandbox.
 
-The examples are built into bluebox, so you can start a sandbox from one
+The examples are built into box, so you can start a sandbox from one
 directly, without this repo:
 
 ```sh
-bluebox new agent --from tiny-python
-bluebox build agent
-bluebox run agent -- python3 --version
+box new agent --from tiny-python
+box build agent
+box run agent -- python3 --version
 ```
 
 Any other files that come with an example (such as `lab-aws`'s `main.tf`) are
@@ -21,10 +21,10 @@ disk, and leave less inside the VM for a workload to exploit.
 
 | Example | Image | What it has |
 |---|---|---|
-| [`tiny-busybox`](tiny-busybox/Bluefile) | ~5 MB | busybox `sh` and coreutils; for scripts and static binaries |
-| [`tiny-alpine`](tiny-alpine/Bluefile) | ~25 MB | bash, curl, git |
-| [`tiny-python`](tiny-python/Bluefile) | ~63 MB | Python 3 + pip on Alpine (musl: see the file's note on wheels) |
-| [`tiny-node`](tiny-node/Bluefile) | ~90 MB | Node.js + npm |
+| [`tiny-busybox`](tiny-busybox/Boxfile) | ~5 MB | busybox `sh` and coreutils; for scripts and static binaries |
+| [`tiny-alpine`](tiny-alpine/Boxfile) | ~25 MB | bash, curl, git |
+| [`tiny-python`](tiny-python/Boxfile) | ~63 MB | Python 3 + pip on Alpine (musl: see the file's note on wheels) |
+| [`tiny-node`](tiny-node/Boxfile) | ~90 MB | Node.js + npm |
 
 For comparison, `python-dev` on Debian is several hundred MB. Set `warm: 1` or
 more in any of them to get runs that start in ~50ms.
@@ -33,18 +33,18 @@ more in any of them to get runs that start in ~50ms.
 
 | Example | What it shows |
 |---|---|
-| [`python-dev`](python-dev/Bluefile) | apt packages, a pip build step, env vars |
-| [`node-dev`](node-dev/Bluefile) | a global npm install as a build step |
-| [`go-build`](go-build/Bluefile) | `pkgmgr` override, read-only root |
-| [`ai-agent`](ai-agent/Bluefile) | blueprint user + sudo, read-only root, per-run timeout |
-| [`offline`](offline/Bluefile) | `network: none` — no egress at all |
-| [`os-lab`](os-lab/Bluefile) | a real kernel: `mount`, `sysctl`, `modprobe` work |
+| [`python-dev`](python-dev/Boxfile) | apt packages, a pip build step, env vars |
+| [`node-dev`](node-dev/Boxfile) | a global npm install as a build step |
+| [`go-build`](go-build/Boxfile) | `pkgmgr` override, read-only root |
+| [`ai-agent`](ai-agent/Boxfile) | blueprint user + sudo, read-only root, per-run timeout |
+| [`offline`](offline/Boxfile) | `network: none` — no egress at all |
+| [`os-lab`](os-lab/Boxfile) | a real kernel: `mount`, `sysctl`, `modprobe` work |
 
 ### Labs
 
 | Example | What it shows |
 |---|---|
-| [`k8s`](k8s/Bluefile) | a real single-node k3s cluster you start with `start-cluster`, plus kubectl and Helm |
+| [`k8s`](k8s/Boxfile) | a real single-node k3s cluster you start with `start-cluster`, plus kubectl and Helm |
 | [`lab-aws`](lab-aws/) | AWS CLI + Terraform against [Floci](https://floci.io/), a local AWS emulator; see [`main.tf`](lab-aws/main.tf) |
 
 **lab-aws**, verified end to end from inside the microVM: S3 (create/put/get), a
@@ -59,8 +59,8 @@ to the Runtime API works). Then:
 
 ```sh
 ./examples/lab-aws/floci-up.sh          # start Floci on the host
-bluebox build lab-aws
-bluebox shell lab-aws
+box build lab-aws
+box shell lab-aws
 # inside: the sandbox reaches Floci at host.containers.internal:4566 (preset)
 cp /path/to/main.tf /data && cd /data
 terraform init && terraform apply
@@ -73,12 +73,12 @@ tools talk to Floci with no flags.
 Three things about the lab sandboxes worth knowing, because they are honest
 limits rather than bugs:
 
-- **State is ephemeral.** Each `bluebox run` is a fresh VM. Start a cluster or
-  a service inside `bluebox shell`, and keep anything you want to keep in
+- **State is ephemeral.** Each `box run` is a fresh VM. Start a cluster or
+  a service inside `box shell`, and keep anything you want to keep in
   `/data`. A k3s cluster's own state resets with the VM.
-- **bluebox runs a command, not a full boot.** systemd is not PID 1, so live
+- **box runs a command, not a full boot.** systemd is not PID 1, so live
   `systemctl start/enable` on services is limited. Start what you need by hand
-  inside `bluebox shell`, as `start-cluster` does for k3s.
+  inside `box shell`, as `start-cluster` does for k3s.
 - **Kubernetes runs, with a networking caveat.** `k8s` boots a
   real k3s cluster (verified: node Ready, pods scheduled and serving). The
   minimal guest kernel has no VXLAN or nf_conntrack, so overlay CNI and
@@ -95,7 +95,7 @@ host's bridge address rather than `localhost`, since inside the sandbox
 ## Notes
 
 - **`ai-agent`** is the one to look at for running a coding agent. Point it at
-  `bluebox run agent -- <command>`: the agent works in a fresh microVM each
+  `box run agent -- <command>`: the agent works in a fresh microVM each
   time, `/data` carries the project between commands, and `timeout_seconds`
   caps any single command.
 - **`go-build`** shows `pkgmgr: apt`. The package manager is normally inferred

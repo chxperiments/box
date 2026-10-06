@@ -7,9 +7,9 @@ import (
 	goruntime "runtime"
 	"strings"
 
-	"bluebox/internal/agent"
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/agent"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
 // podmanBackend boots microVMs with `podman run --runtime krun`. It is the
@@ -52,7 +52,7 @@ func (podmanBackend) Preflight() error {
 	return nil
 }
 
-func (podmanBackend) Launch(name string, s bluefile.Spec, l Launch) (*exec.Cmd, error) {
+func (podmanBackend) Launch(name string, s boxfile.Spec, l Launch) (*exec.Cmd, error) {
 	args, err := vmArgs(name, s, l.Interactive, !l.Baseline)
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func (podmanBackend) Launch(name string, s bluefile.Spec, l Launch) (*exec.Cmd, 
 			// the token never appears in an argv that any host user can read
 			// from ps.
 			"-e", l.TokenEnv,
-			"--entrypoint", agentMount+"/bluebox",
+			"--entrypoint", agentMount+"/box",
 		)
 	}
 	args = append(args, sandbox.ImageTag(name))
@@ -114,7 +114,7 @@ func (b podmanBackend) RemoveLabelled(label, value string) {
 }
 
 // podmanCmd is how every podman-backed VM is launched. For a fork, podman
-// runs inside podman's own user namespace, after `bluebox __overlay` has
+// runs inside podman's own user namespace, after `box __overlay` has
 // mounted the fork's overlay there: a fork's /data exists only in that
 // namespace, and a VM launched from outside it would see an empty directory.
 func podmanCmd(name string, args ...string) *exec.Cmd {
@@ -123,7 +123,7 @@ func podmanCmd(name string, args ...string) *exec.Cmd {
 	}
 	self, err := os.Executable()
 	if err != nil {
-		self = "bluebox"
+		self = "box"
 	}
 	return inPodmanNS(append([]string{self, "__overlay", name, "--", "podman"}, args...)...)
 }

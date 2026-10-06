@@ -1,15 +1,15 @@
 [package]
-name = "bluebox-sdk"
+name = "sdbox"
 version = "0.1.0"
 edition = "2021"
 rust-version = "1.70"
-description = "Rust SDK for bluebox: microVM sandboxes that start in milliseconds"
+description = "Rust SDK for box: microVM sandboxes that start in milliseconds"
 license = "MIT"
 repository = "https://github.com/chxperiments/bluebox"
 readme = "README.md"
 
 [lib]
-name = "bluebox"
+name = "sdbox"
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }

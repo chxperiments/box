@@ -8,10 +8,10 @@ import (
 	"os/exec"
 	"strings"
 
-	"bluebox/internal/sandbox"
+	"box/internal/sandbox"
 )
 
-// The fork endpoints run bluebox's own fork, diff, apply and discard
+// The fork endpoints run box's own fork, diff, apply and discard
 // commands rather than re-implementing them: those carry every guard (no
 // apply while up, pools drained, strict sandboxes handled under podman
 // unshare, symlinks never followed), and one implementation cannot drift
@@ -27,7 +27,7 @@ type change struct {
 	Path string `json:"path"`
 }
 
-// cli runs `bluebox args...` and returns stdout, or an error carrying stderr.
+// cli runs `box args...` and returns stdout, or an error carrying stderr.
 func cli(args ...string) (string, error) {
 	self, err := os.Executable()
 	if err != nil {
@@ -37,7 +37,7 @@ func cli(args ...string) (string, error) {
 	var out, errb bytes.Buffer
 	cmd.Stdout, cmd.Stderr = &out, &errb
 	if err := cmd.Run(); err != nil {
-		msg := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(errb.String()), "bluebox: "))
+		msg := strings.TrimSpace(strings.TrimPrefix(strings.TrimSpace(errb.String()), "box: "))
 		if msg == "" {
 			msg = err.Error()
 		}

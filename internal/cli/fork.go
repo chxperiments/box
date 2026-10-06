@@ -8,14 +8,14 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"bluebox/internal/runtime"
-	"bluebox/internal/sandbox"
+	"box/internal/runtime"
+	"box/internal/sandbox"
 )
 
 func forkCmd() *cobra.Command {
 	return &cobra.Command{
 		Use: "fork <name> <fork>", Short: "branch a sandbox's /data", GroupID: groupState,
-		Long: "Creates <fork>: the same Bluefile and image as <name>, with /data an\n" +
+		Long: "Creates <fork>: the same Boxfile and image as <name>, with /data an\n" +
 			"overlay on <name>'s. Running the fork never touches <name>; its\n" +
 			"changes collect in a layer of their own, which diff shows, apply\n" +
 			"merges back and discard throws away. Fork several times to try\n" +
@@ -23,10 +23,10 @@ func forkCmd() *cobra.Command {
 			"Only /data is branched. Everything else resets per run anyway.",
 		Args:              cobra.ExactArgs(2),
 		ValidArgsFunction: completeName,
-		Example: "  bluebox fork devbox try-b\n" +
-			"  bluebox run try-b -- make test\n" +
-			"  bluebox diff try-b\n" +
-			"  bluebox apply try-b      # or: bluebox discard try-b",
+		Example: "  box fork devbox try-b\n" +
+			"  box run try-b -- make test\n" +
+			"  box diff try-b\n" +
+			"  box apply try-b      # or: box discard try-b",
 		RunE: func(_ *cobra.Command, args []string) error {
 			parent, name := args[0], args[1]
 			if err := sandbox.ValidName(name); err != nil {
@@ -58,7 +58,7 @@ func diffCmd() *cobra.Command {
 			}
 			cs, err := sandbox.Diff(name)
 			if errors.Is(err, sandbox.ErrNotFork) {
-				return fmt.Errorf("%s is not a fork; make one with: bluebox fork <name> <fork>", name)
+				return fmt.Errorf("%s is not a fork; make one with: box fork <name> <fork>", name)
 			}
 			if err != nil {
 				return err
@@ -130,7 +130,7 @@ func applyCmd() *cobra.Command {
 			}
 			skipped, err := sandbox.Apply(name)
 			for _, s := range skipped {
-				fmt.Fprintf(os.Stderr, "bluebox: skipped %s: not a file, directory or symlink\n", s)
+				fmt.Fprintf(os.Stderr, "box: skipped %s: not a file, directory or symlink\n", s)
 			}
 			if err != nil {
 				return err
@@ -194,7 +194,7 @@ func discardCmd() *cobra.Command {
 // there, the namespace's root can read and write them. The re-run is
 // marked, so it cannot recurse, and its exit status is passed through.
 func asDataOwner(name string, args ...string) (handled bool, err error) {
-	if os.Getenv("BLUEBOX_UNSHARED") != "" {
+	if os.Getenv("BOX_UNSHARED") != "" {
 		return false, nil
 	}
 	upper, err := sandbox.UpperDir(name)
@@ -209,7 +209,7 @@ func asDataOwner(name string, args ...string) (handled bool, err error) {
 		return true, err
 	}
 	cmd := exec.Command("podman", append([]string{"unshare", self}, args...)...)
-	cmd.Env = append(os.Environ(), "BLUEBOX_UNSHARED=1")
+	cmd.Env = append(os.Environ(), "BOX_UNSHARED=1")
 	cmd.Stdin, cmd.Stdout, cmd.Stderr = os.Stdin, os.Stdout, os.Stderr
 	if err := cmd.Run(); err != nil {
 		if code := runtime.ExitCode(err); code > 0 {

@@ -1,10 +1,10 @@
-"""Python SDK for bluebox.
+"""Python SDK for box.
 
 Every sandbox is a microVM with its own kernel. The SDK talks to
-``bluebox serve`` over a Unix socket only you can open, and starts it for you
+``box serve`` over a Unix socket only you can open, and starts it for you
 the first time it is needed.
 
-    from bluebox import Sandbox
+    from sdbox import Sandbox
 
     with Sandbox("agent") as sb:                 # up on enter, down on exit
         r = sb.exec("python3 -c 'print(6 * 7)'")
@@ -34,7 +34,7 @@ __all__ = [
     "Client",
     "Sandbox",
     "Result",
-    "BlueboxError",
+    "BoxError",
     "NotFound",
     "NotUp",
     "CommandFailed",
@@ -45,7 +45,7 @@ __version__ = "0.1.0"
 Command = Union[str, Sequence[str]]
 
 
-class BlueboxError(Exception):
+class BoxError(Exception):
     """The server refused or could not carry out a request."""
 
     def __init__(self, message: str, code: str = "internal", status: int = 0):
@@ -54,15 +54,15 @@ class BlueboxError(Exception):
         self.status = status
 
 
-class NotFound(BlueboxError):
+class NotFound(BoxError):
     """No sandbox by that name."""
 
 
-class NotUp(BlueboxError):
+class NotUp(BoxError):
     """exec was called on a sandbox that is not up."""
 
 
-class CommandFailed(BlueboxError):
+class CommandFailed(BoxError):
     """Raised by Result.check() for a command that exited non-zero."""
 
     def __init__(self, result: "Result"):
@@ -102,23 +102,23 @@ class Result:
 
 
 def _default_socket() -> str:
-    # Mirrors sandbox.SocketPath in the Go server: the bluebox root, or the
+    # Mirrors sandbox.SocketPath in the Go server: the box root, or the
     # per-user runtime dir when that path is too long for a Unix socket.
-    home = os.environ.get("BLUEBOX_HOME") or os.path.join(os.path.expanduser("~"), ".bluebox")
-    path = os.path.join(home, "bluebox.sock")
+    home = os.environ.get("BOX_HOME") or os.path.join(os.path.expanduser("~"), ".box")
+    path = os.path.join(home, "box.sock")
     if len(path.encode()) <= 103:
         return path
     run = os.environ.get("XDG_RUNTIME_DIR")
     if not run:
-        raise BlueboxError(f"socket path {path} is too long for a Unix socket; "
-                           "shorten BLUEBOX_HOME or set XDG_RUNTIME_DIR", code="bad_socket")
+        raise BoxError(f"socket path {path} is too long for a Unix socket; "
+                           "shorten BOX_HOME or set XDG_RUNTIME_DIR", code="bad_socket")
     digest = hashlib.sha256(home.encode()).hexdigest()[:12]
-    return os.path.join(run, f"bluebox-{digest}.sock")
+    return os.path.join(run, f"box-{digest}.sock")
 
 
 class _UnixConnection(http.client.HTTPConnection):
     def __init__(self, path: str, timeout: Optional[float]):
-        super().__init__("bluebox", timeout=timeout)
+        super().__init__("box", timeout=timeout)
         self._path = path
 
     def connect(self) -> None:
@@ -148,11 +148,11 @@ class Change:
 
 
 class Client:
-    """A connection to the local bluebox server.
+    """A connection to the local box server.
 
-    socket:    path to the server socket (default ~/.bluebox/bluebox.sock).
-    binary:    the bluebox executable, used to start the server if needed.
-    autostart: start ``bluebox serve`` when nothing is listening. It exits by
+    socket:    path to the server socket (default ~/.box/box.sock).
+    binary:    the box executable, used to start the server if needed.
+    autostart: start ``box serve`` when nothing is listening. It exits by
                itself after ``idle`` without requests.
     """
 
@@ -164,7 +164,7 @@ class Client:
         idle: str = "15m",
     ):
         self.socket = socket or _default_socket()
-        self.binary = binary or shutil.which("bluebox") or "bluebox"
+        self.binary = binary or shutil.which("box") or "box"
         self.autostart = autostart
         self.idle = idle
 
@@ -183,8 +183,8 @@ class Client:
                 break
             except (FileNotFoundError, ConnectionRefusedError):
                 if attempt or not self.autostart:
-                    raise BlueboxError(
-                        f"bluebox server not running at {self.socket}; start it: bluebox serve",
+                    raise BoxError(
+                        f"box server not running at {self.socket}; start it: box serve",
                         code="no_server",
                     )
                 self._start_server()
@@ -193,7 +193,7 @@ class Client:
         decoded = json.loads(data) if data else None
         if resp.status >= 400:
             err = decoded or {}
-            cls = {"no_sandbox": NotFound, "not_up": NotUp}.get(err.get("code"), BlueboxError)
+            cls = {"no_sandbox": NotFound, "not_up": NotUp}.get(err.get("code"), BoxError)
             raise cls(err.get("error", f"HTTP {resp.status}"), err.get("code", "internal"), resp.status)
         return decoded
 
@@ -213,7 +213,7 @@ class Client:
                 return
             except OSError:
                 time.sleep(0.02)
-        raise BlueboxError(f"started {self.binary} serve but it never listened on {self.socket}",
+        raise BoxError(f"started {self.binary} serve but it never listened on {self.socket}",
                            code="no_server")
 
     # -- API ---------------------------------------------------------------
@@ -232,7 +232,7 @@ class Client:
 class Sandbox:
     """One sandbox, by name. Create and build it first with the CLI:
 
-        bluebox new agent --from tiny-python && bluebox build agent
+        box new agent --from tiny-python && box build agent
 
     As a context manager it brings the sandbox up on entry and down on exit,
     unless it was already up, in which case it is left as it was found.
@@ -281,13 +281,13 @@ class Sandbox:
         """Run in the running microVM (see up). State carries between calls.
 
         cmd is a shell string or an argv list. timeout, in seconds, overrides
-        the Bluefile's timeout_seconds; a timed-out command exits 124.
+        the Boxfile's timeout_seconds; a timed-out command exits 124.
         """
         return self._command("exec", cmd, stdin, timeout)
 
     def run(self, cmd: Command, timeout: Optional[int] = None) -> Result:
         """Run in a fresh microVM that is destroyed afterwards. With ``warm:``
-        in the Bluefile it comes from the pool and starts in milliseconds."""
+        in the Boxfile it comes from the pool and starts in milliseconds."""
         return self._command("run", cmd, None, timeout)
 
     def write_file(self, path: str, data: Union[bytes, str], mode: str = "0644") -> None:

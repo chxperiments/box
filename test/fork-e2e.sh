@@ -3,20 +3,20 @@
 # parent stays untouched, diff, apply, discard, the guards, and the symlink
 # a guest plants in /data to try to turn apply into a write elsewhere.
 #
-#   test/fork-e2e.sh [path/to/bluebox] [standard|strict]
+#   test/fork-e2e.sh [path/to/box] [standard|strict]
 #
-# Uses a private BLUEBOX_HOME; needs podman with krun and a static bluebox.
+# Uses a private BOX_HOME; needs podman with krun and a static box.
 # Prints PASS/FAIL per check and exits non-zero on any FAIL.
 set -u
-B=${1:-$(command -v bluebox)}; MODE=${2:-strict}
+B=${1:-$(command -v box)}; MODE=${2:-strict}
 FAILS=0
-export BLUEBOX_HOME=$(mktemp -d /tmp/bbfork-$MODE.XXXX)
+export BOX_HOME=$(mktemp -d /tmp/bbfork-$MODE.XXXX)
 OUT=$(mktemp -d /tmp/bbfork-outside.XXXX)
 chmod 755 /tmp/bbfork-outside.* 2>/dev/null
 ok(){ echo "  PASS $*"; }; bad(){ echo "  FAIL $*"; FAILS=$((FAILS + 1)); }
 g(){ grep -v 'shared mount'; }
 $B new p >/dev/null
-printf 'base: docker.io/library/alpine:latest\ncpus: 1\nram_mib: 512\nisolation: %s\nwarm: 1\n' $MODE > $BLUEBOX_HOME/sandboxes/p/Bluefile
+printf 'base: docker.io/library/alpine:latest\ncpus: 1\nram_mib: 512\nisolation: %s\nwarm: 1\n' $MODE > $BOX_HOME/sandboxes/p/Boxfile
 $B build p 2>&1 | grep -E 'isolated' | g
 $B run p -- sh -c 'echo base > /data/keep; echo old > /data/change; echo x > /data/gone; mkdir /data/sub; echo s > /data/sub/a; ln -s '"$OUT"' /data/x; echo made' | g
 S0=$(date +%s%N); $B fork p f1 | g; echo "  fork took $(( ($(date +%s%N)-S0)/1000000 ))ms"
@@ -48,6 +48,6 @@ $B apply f1 -y 2>&1 | sed 's/^/  /'   # refused while up
 $B down f1 >/dev/null; $B apply f1 -y 2>&1 | sed 's/^/  /'
 [ "$($B run p -- cat /data/e | g)" = "via-exec" ] && ok "exec on a fork applied to parent" || bad "exec change lost"
 $B destroy f1 -y | g; $B destroy f2 -y | g; $B destroy p --data -y | g
-[ ! -e $BLUEBOX_HOME/forks/f1 ] && ok "fork dirs removed" || bad "fork dir left"
-pkill -f "^$B serve" 2>/dev/null; podman unshare rm -rf $BLUEBOX_HOME $OUT 2>/dev/null || rm -rf $BLUEBOX_HOME $OUT
+[ ! -e $BOX_HOME/forks/f1 ] && ok "fork dirs removed" || bad "fork dir left"
+pkill -f "^$B serve" 2>/dev/null; podman unshare rm -rf $BOX_HOME $OUT 2>/dev/null || rm -rf $BOX_HOME $OUT
 exit $((FAILS > 0))

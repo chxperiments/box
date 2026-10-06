@@ -12,9 +12,9 @@ import (
 	"strings"
 	"time"
 
-	"bluebox/internal/agent"
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/agent"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
 // krunBackend boots microVMs by driving crun's libkrun handler directly,
@@ -28,7 +28,7 @@ import (
 // the host's gateway address unmapped so the guest cannot reach host
 // loopback, and the agent's port forwarded from 127.0.0.1 only.
 //
-// Per VM, under ~/.bluebox/vms/<vm>/:
+// Per VM, under ~/.box/vms/<vm>/:
 //
 //	config.json   the OCI spec (owner-only: it carries the agent token)
 //	meta.json     sandbox, labels, agent port
@@ -81,16 +81,16 @@ func vmDir(vm string) (string, error) {
 	return filepath.Join(d, vm), nil
 }
 
-// krunRoot is crun's state directory for bluebox's VMs, apart from podman's.
+// krunRoot is crun's state directory for box's VMs, apart from podman's.
 func krunRoot() string {
 	run := os.Getenv("XDG_RUNTIME_DIR")
 	if run == "" {
 		run = os.TempDir()
 	}
-	return filepath.Join(run, "bluebox", "krun")
+	return filepath.Join(run, "box", "krun")
 }
 
-func (b krunBackend) Launch(name string, s bluefile.Spec, l Launch) (*exec.Cmd, error) {
+func (b krunBackend) Launch(name string, s boxfile.Spec, l Launch) (*exec.Cmd, error) {
 	if s.Isolation == "strict" {
 		// libkrun fails to start inside a second, nested user namespace here
 		// (`readlink: No such file or directory`). Refuse rather than fall
@@ -106,7 +106,7 @@ func (b krunBackend) Launch(name string, s bluefile.Spec, l Launch) (*exec.Cmd, 
 	}
 	vm := l.VM
 	if vm == "" {
-		vm = fmt.Sprintf("bluebox-%s-%d-%d", name, os.Getpid(), time.Now().UnixNano()%1000)
+		vm = fmt.Sprintf("box-%s-%d-%d", name, os.Getpid(), time.Now().UnixNano()%1000)
 	}
 	dir, err := vmDir(vm)
 	if err != nil {
@@ -186,7 +186,7 @@ func (b krunBackend) Launch(name string, s bluefile.Spec, l Launch) (*exec.Cmd, 
 		return nil, err
 	}
 
-	// `bluebox __krun` mounts the overlays inside podman's namespace, runs
+	// `box __krun` mounts the overlays inside podman's namespace, runs
 	// krun (or crun, for the baseline), and cleans up a foreground VM.
 	args := []string{self, "__krun", "--dir", dir, "--rootfs", rootfs}
 	if l.Detach {
@@ -281,7 +281,7 @@ func (b krunBackend) RemoveLabelled(label, value string) {
 	}
 }
 
-// RunKrun is the `bluebox __krun` command, run inside podman unshare: it
+// RunKrun is the `box __krun` command, run inside podman unshare: it
 // mounts the VM's rootfs overlay (and a fork's /data overlay), then runs
 // krun -- or crun for the isolation baseline -- on the VM's bundle. A
 // foreground VM is cleaned up when it exits; a detached one by Remove.
@@ -292,7 +292,7 @@ func RunKrun(dir, rootfs, fork string, detach, baseline, interactive bool) error
 	vm := filepath.Base(dir)
 	t0 := time.Now()
 	trace := func(stage string) {
-		if os.Getenv("BLUEBOX_TRACE") != "" {
+		if os.Getenv("BOX_TRACE") != "" {
 			fmt.Fprintf(os.Stderr, "trace: %-8s %6.0fms\n", stage, float64(time.Since(t0).Microseconds())/1000)
 		}
 	}
@@ -351,7 +351,7 @@ func RunKrun(dir, rootfs, fork string, detach, baseline, interactive bool) error
 	return nil
 }
 
-// AttachNetwork is the `bluebox __netns` createRuntime hook. crun hands the
+// AttachNetwork is the `box __netns` createRuntime hook. crun hands the
 // container state on stdin; pasta joins the VM's user and network namespaces
 // by PID and gives the network namespace a route out. --no-map-gw keeps the
 // gateway address from reaching the host's own loopback, and the only inbound
@@ -397,7 +397,7 @@ func AttachNetwork(forward int, logPath string) (err error) {
 	if err != nil {
 		return fmt.Errorf("pasta: %s", strings.TrimSpace(string(out)))
 	}
-	if os.Getenv("BLUEBOX_TRACE") != "" {
+	if os.Getenv("BOX_TRACE") != "" {
 		fmt.Fprintf(os.Stderr, "trace: pasta    %6.0fms\n", float64(time.Since(t0).Microseconds())/1000)
 	}
 	return nil

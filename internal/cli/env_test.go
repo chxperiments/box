@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"bluebox/internal/bluefile"
+	"box/internal/boxfile"
 )
 
 func TestShellQuote(t *testing.T) {
@@ -24,9 +24,9 @@ func TestShellQuote(t *testing.T) {
 	}
 }
 
-// `bluebox env` is documented for eval, and base and env come from a Bluefile
+// `box env` is documented for eval, and base and env come from a Boxfile
 // that may be someone else's. Evaluating the output must reproduce every value
-// literally, run nothing, and assign only BLUEBOX_* variables.
+// literally, run nothing, and assign only BOX_* variables.
 func TestEnvLinesAreInertUnderEval(t *testing.T) {
 	sh, err := exec.LookPath("sh")
 	if err != nil {
@@ -34,7 +34,7 @@ func TestEnvLinesAreInertUnderEval(t *testing.T) {
 	}
 	dir := t.TempDir()
 	marker := filepath.Join(dir, "pwned")
-	s := bluefile.Default
+	s := boxfile.Default
 	s.Base = "docker.io/library/alpine:latest$(touch${IFS}" + marker + ")"
 	s.Env = map[string]string{
 		"LANG":      "C.UTF-8;touch " + marker,
@@ -45,7 +45,7 @@ func TestEnvLinesAreInertUnderEval(t *testing.T) {
 	lines := envLines("demo", "/data dir/demo", s)
 
 	script := "eval \"$1\"\n" +
-		`printf '%s\n' "$BLUEBOX_BASE" "$BLUEBOX_DATA" "$BLUEBOX_ENV_LANG" "$BLUEBOX_ENV_JAVA_OPTS" "$BLUEBOX_ENV_QUOTE" "$BLUEBOX_ENV_PATH" "$PATH"`
+		`printf '%s\n' "$BOX_BASE" "$BOX_DATA" "$BOX_ENV_LANG" "$BOX_ENV_JAVA_OPTS" "$BOX_ENV_QUOTE" "$BOX_ENV_PATH" "$PATH"`
 	cmd := exec.Command(sh, "-c", script, "sh", strings.Join(lines, "\n"))
 	cmd.Env = []string{"PATH=/usr/bin:/bin"}
 	out, err := cmd.Output()
@@ -53,7 +53,7 @@ func TestEnvLinesAreInertUnderEval(t *testing.T) {
 		t.Fatalf("eval failed: %v", err)
 	}
 	if _, err := os.Stat(marker); !os.IsNotExist(err) {
-		t.Fatal("evaluating bluebox env output ran a command from the Bluefile")
+		t.Fatal("evaluating box env output ran a command from the Boxfile")
 	}
 	want := []string{s.Base, "/data dir/demo", s.Env["LANG"], s.Env["JAVA_OPTS"], s.Env["QUOTE"], "/nonexistent", "/usr/bin:/bin"}
 	got := strings.Split(strings.TrimSuffix(string(out), "\n"), "\n")

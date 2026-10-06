@@ -1,6 +1,6 @@
-// Package mcp serves bluebox to AI agents over the Model Context Protocol:
+// Package mcp serves box to AI agents over the Model Context Protocol:
 // JSON-RPC 2.0 on stdin and stdout, one message per line. Each tool is a
-// request to the same handler `bluebox serve` exposes, called in-process,
+// request to the same handler `box serve` exposes, called in-process,
 // so an agent gets exactly the validation, guards and isolation checks the
 // SDKs get, and nothing more.
 //
@@ -107,9 +107,9 @@ func (s *Server) handle(req request) (any, *rpcError) {
 		return map[string]any{
 			"protocolVersion": ProtocolVersion,
 			"capabilities":    map[string]any{"tools": map[string]any{}},
-			"serverInfo":      map[string]any{"name": "bluebox", "version": s.version},
-			"instructions": "bluebox runs commands in disposable microVM sandboxes, each with its own kernel. " +
-				"Sandboxes are created and built by a human with the bluebox CLI; list them with list_sandboxes. " +
+			"serverInfo":      map[string]any{"name": "box", "version": s.version},
+			"instructions": "box runs commands in disposable microVM sandboxes, each with its own kernel. " +
+				"Sandboxes are created and built by a human with the box CLI; list them with list_sandboxes. " +
 				"`run` uses a fresh VM per command; `up` then `exec` keeps one VM and its state between commands. " +
 				"To try changes safely, `fork` a sandbox and work in the fork; a human reviews `diff` and applies it.",
 		}, nil
@@ -148,7 +148,7 @@ func (s *Server) call(method, path string, body any) (map[string]any, []any, err
 		b, _ := json.Marshal(body)
 		rd = bytes.NewReader(b)
 	}
-	req, _ := http.NewRequest(method, "http://bluebox"+path, rd)
+	req, _ := http.NewRequest(method, "http://box"+path, rd)
 	req.Header.Set("Content-Type", "application/json")
 	rec := &recorder{header: http.Header{}, code: 200}
 	s.api.ServeHTTP(rec, req)

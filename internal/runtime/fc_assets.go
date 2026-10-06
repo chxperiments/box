@@ -14,7 +14,7 @@ import (
 	goruntime "runtime"
 	"strings"
 
-	"bluebox/internal/sandbox"
+	"box/internal/sandbox"
 )
 
 // Firecracker and its guest kernel are pinned, downloaded on first use and
@@ -27,7 +27,7 @@ const (
 	fcKernelName  = "vmlinux-6.1.155"
 	fcKernelURL   = "https://s3.amazonaws.com/spec.ccfc.min/firecracker-ci/v1.15/x86_64/" + fcKernelName
 	fcKernelSHA   = "e20e46d0c36c55c0d1014eb20576171b3f3d922260d9f792017aeff53af3d4f2"
-	fcToolsImage  = "localhost/bluebox/fc-tools:latest"
+	fcToolsImage  = "localhost/box/fc-tools:latest"
 	fcDataDiskGiB = 8 // sparse: only what /data actually holds is stored
 )
 

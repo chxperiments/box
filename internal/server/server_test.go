@@ -15,8 +15,8 @@ import (
 func start(t *testing.T, idle time.Duration) (*http.Client, string, chan error) {
 	t.Helper()
 	home := t.TempDir()
-	t.Setenv("BLUEBOX_HOME", home)
-	sock := filepath.Join(home, "bluebox.sock")
+	t.Setenv("BOX_HOME", home)
+	sock := filepath.Join(home, "box.sock")
 	done := make(chan error, 1)
 	go func() { done <- Serve(sock, "test", idle) }()
 	for i := 0; i < 100; i++ {
@@ -69,7 +69,7 @@ func TestRoutes(t *testing.T) {
 		{"GET", "/v1/sandboxes/ghost/exec", "", 405, ""},
 	}
 	for _, tc := range cases {
-		req, _ := http.NewRequest(tc.method, "http://bluebox"+tc.path, strings.NewReader(tc.body))
+		req, _ := http.NewRequest(tc.method, "http://box"+tc.path, strings.NewReader(tc.body))
 		resp, err := c.Do(req)
 		if err != nil {
 			t.Fatal(err)

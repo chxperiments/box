@@ -5,10 +5,10 @@ import (
 	"path/filepath"
 	"testing"
 
-	"bluebox/internal/bluefile"
+	"box/internal/boxfile"
 )
 
-// Every shipped example must parse: `bluebox new --from` writes it verbatim,
+// Every shipped example must parse: `box new --from` writes it verbatim,
 // so a broken one would fail at the user's first build.
 func TestEveryExampleParses(t *testing.T) {
 	names := Names()
@@ -20,11 +20,11 @@ func TestEveryExampleParses(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%s: %v", n, err)
 		}
-		p := filepath.Join(t.TempDir(), "Bluefile")
+		p := filepath.Join(t.TempDir(), "Boxfile")
 		if err := os.WriteFile(p, bf, 0o644); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := bluefile.Parse(p); err != nil {
+		if _, err := boxfile.Parse(p); err != nil {
 			t.Errorf("%s: %v", n, err)
 		}
 	}

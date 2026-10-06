@@ -1,7 +1,7 @@
 // Package agent is the channel into a running sandbox. krun has no exec -- a
 // microVM has its own kernel, so there is no host-side namespace to step into
-// -- so a sandbox brought up with `bluebox up` runs this agent as its main
-// process instead, and every `bluebox exec` is a request to it. That turns a
+// -- so a sandbox brought up with `box up` runs this agent as its main
+// process instead, and every `box exec` is a request to it. That turns a
 // command from "boot a VM" into "open a socket", which is where the speed
 // comes from.
 //
@@ -16,7 +16,7 @@
 //
 // The client checks the kernel before the command starts, so a sandbox that is
 // somehow not a microVM is refused before anything runs, the same promise
-// `bluebox run` makes.
+// `box run` makes.
 package agent
 
 import (
@@ -42,10 +42,10 @@ const Port = 7700
 
 // TokenEnv carries the per-VM secret to the agent. Anyone on the host can
 // connect to a loopback port, so the token is what makes the agent answer
-// only to the bluebox that started it.
-const TokenEnv = "BLUEBOX_AGENT_TOKEN"
+// only to the box that started it.
+const TokenEnv = "BOX_AGENT_TOKEN"
 
-// ExitTimeout matches timeout(1), as `bluebox run` does.
+// ExitTimeout matches timeout(1), as `box run` does.
 const ExitTimeout = 124
 
 const (
@@ -163,7 +163,7 @@ func (w frameWriter) Write(p []byte) (int, error) {
 func Serve() error {
 	token := os.Getenv(TokenEnv)
 	if token == "" {
-		return errors.New("no " + TokenEnv + "; the agent is started by `bluebox up`")
+		return errors.New("no " + TokenEnv + "; the agent is started by `box up`")
 	}
 	// Commands inherit the agent's environment -- the image's ENV lines --
 	// but never the secret that admits a client.
@@ -395,7 +395,7 @@ func Exec(addr string, req Request, check func(kernel string) error,
 			}
 			res.Kernel = r.Kernel
 			if res.Err != "" {
-				fmt.Fprintf(stderr, "bluebox: %s\n", res.Err)
+				fmt.Fprintf(stderr, "box: %s\n", res.Err)
 			}
 			return res, nil
 		}

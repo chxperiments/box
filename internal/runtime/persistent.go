@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"bluebox/internal/agent"
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/agent"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
 // ErrNotUp is returned by Exec for a sandbox with no running VM.
@@ -27,13 +27,13 @@ var ErrNotUp = errors.New("not up")
 var errNotIsolated = errors.New("not isolated")
 
 // ExitStatus is a command's non-zero exit from a running sandbox. It is the
-// sandbox's result rather than bluebox failing, so ExitCode unwraps it.
+// sandbox's result rather than box failing, so ExitCode unwraps it.
 type ExitStatus struct{ Code int }
 
 func (e *ExitStatus) Error() string { return "exit status " + strconv.Itoa(e.Code) }
 
 // agentMount is where the agent directory appears inside the guest.
-const agentMount = "/.bluebox"
+const agentMount = "/.box"
 
 // upState is what `up` leaves behind for `exec` and `down`. It holds a
 // secret, so it is written owner-only.
@@ -45,7 +45,7 @@ type upState struct {
 	Started   string `json:"started"`
 }
 
-func upContainer(name string) string { return "bluebox-up-" + name }
+func upContainer(name string) string { return "box-up-" + name }
 
 func loadUp(name string) (upState, error) {
 	p, err := sandbox.RunStatePath(name)
@@ -85,7 +85,7 @@ func saveUp(name string, st upState) error {
 func installAgent() (string, error) {
 	if goruntime.GOOS != "linux" {
 		// The guest needs a Linux binary; on macOS this one is Darwin.
-		return "", fmt.Errorf("bluebox up is Linux-only for now; use bluebox run")
+		return "", fmt.Errorf("box up is Linux-only for now; use box run")
 	}
 	exe, err := os.Executable()
 	if err != nil {
@@ -99,9 +99,9 @@ func installAgent() (string, error) {
 		return "", fmt.Errorf("cannot inspect %s: %w", exe, err)
 	}
 	if dyn {
-		return "", fmt.Errorf("this bluebox is dynamically linked, so it cannot run inside the guest.\n" +
+		return "", fmt.Errorf("this box is dynamically linked, so it cannot run inside the guest.\n" +
 			"Rebuild it static (release binaries already are):\n" +
-			"  CGO_ENABLED=0 go build -o bluebox ./cmd/bluebox")
+			"  CGO_ENABLED=0 go build -o box ./cmd/box")
 	}
 
 	src, err := os.ReadFile(exe)
@@ -112,7 +112,7 @@ func installAgent() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	dst := filepath.Join(dir, "bluebox")
+	dst := filepath.Join(dir, "box")
 	// Running VMs have the old copy mounted; leave it alone when it is
 	// already this binary, and otherwise swap it by rename so they keep the
 	// file they opened.
@@ -157,13 +157,13 @@ func kernelGate(host string) func(string) error {
 // Up boots a sandbox once and leaves it running with the agent as its main
 // process, so later commands cost a connection rather than a boot. It returns
 // how long the VM took to answer.
-func Up(name string, s bluefile.Spec) (time.Duration, error) {
+func Up(name string, s boxfile.Spec) (time.Duration, error) {
 	if s.Network == "none" && s.Backend != "firecracker" {
 		// The agent is reached through a published port, and podman will not
 		// publish one on a sandbox with no network. Firecracker's agent is on
 		// vsock and needs none.
-		return 0, fmt.Errorf("bluebox up needs a network to reach its agent; %s has network: none.\n"+
-			"Use bluebox run for offline sandboxes", name)
+		return 0, fmt.Errorf("box up needs a network to reach its agent; %s has network: none.\n"+
+			"Use box run for offline sandboxes", name)
 	}
 	if st, err := loadUp(name); err == nil {
 		if ping(st) == nil {
@@ -187,7 +187,7 @@ func Up(name string, s bluefile.Spec) (time.Duration, error) {
 // until the agent answers from a kernel that is not the host's. A VM that
 // never answers, or answers from the host kernel, is torn down rather than
 // left running.
-func boot(name string, s bluefile.Spec, ctr string, labels map[string]string) (upState, error) {
+func boot(name string, s boxfile.Spec, ctr string, labels map[string]string) (upState, error) {
 	b, err := backendFor(s)
 	if err != nil {
 		return upState{}, err
@@ -264,14 +264,14 @@ func ping(st upState) error {
 // Exec runs argv in the sandbox's running VM. Unlike Run nothing is booted, so
 // state -- files outside /data, background processes -- carries from one
 // command to the next, exactly as in a shell session.
-func Exec(name string, s bluefile.Spec, argv []string, streams Streams) error {
+func Exec(name string, s boxfile.Spec, argv []string, streams Streams) error {
 	st, err := loadUp(name)
 	if err != nil {
 		return err
 	}
 	err = execOn(name, st, s, "exec", argv, streams)
 	if errors.Is(err, errLost) {
-		return fmt.Errorf("%s is not responding (%v); restart it: bluebox down %s && bluebox up %s",
+		return fmt.Errorf("%s is not responding (%v); restart it: box down %s && box up %s",
 			name, err, name, name)
 	}
 	return err
@@ -282,7 +282,7 @@ var errLost = errors.New("agent unreachable")
 
 // execOn runs argv through the agent of a running VM, with output streamed
 // and logged the way Run does, and every command gated on the guest kernel.
-func execOn(name string, st upState, s bluefile.Spec, verb string, argv []string, streams Streams) error {
+func execOn(name string, st upState, s boxfile.Spec, verb string, argv []string, streams Streams) error {
 	host, err := HostKernel()
 	if err != nil {
 		return err

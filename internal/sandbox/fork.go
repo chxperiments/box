@@ -23,10 +23,10 @@ import (
 // commands but is not the host's: on the host the merge directory is an
 // empty directory, and a fork's VMs are launched from within the namespace.
 //
-//	~/.bluebox/forks/<name>/fork.json   parent and creation time
-//	~/.bluebox/forks/<name>/upper       the fork's changes
-//	~/.bluebox/forks/<name>/work        overlayfs scratch space
-//	~/.bluebox/forks/<name>/merge       where the overlay is mounted
+//	~/.box/forks/<name>/fork.json   parent and creation time
+//	~/.box/forks/<name>/upper       the fork's changes
+//	~/.box/forks/<name>/work        overlayfs scratch space
+//	~/.box/forks/<name>/merge       where the overlay is mounted
 
 // ErrNotFork is returned by fork-only operations on an ordinary sandbox.
 var ErrNotFork = errors.New("not a fork")
@@ -110,7 +110,7 @@ func Unmount(name string) error {
 	case err == nil, strings.Contains(msg, "not mounted"), strings.Contains(msg, "no mount point"):
 		return nil
 	case strings.Contains(msg, "busy"):
-		return fmt.Errorf("%s is in use by a running VM; stop it first (bluebox down %s)", name, name)
+		return fmt.Errorf("%s is in use by a running VM; stop it first (box down %s)", name, name)
 	}
 	return fmt.Errorf("unmounting %s: %s", name, msg)
 }
@@ -182,7 +182,7 @@ func DataSource(name string) (string, error) {
 	return MergeDir(name)
 }
 
-// CreateFork makes name a fork of parent: the parent's Bluefile is copied,
+// CreateFork makes name a fork of parent: the parent's Boxfile is copied,
 // and /data becomes an overlay on the parent's. The image is the caller's
 // to retag. A fork of a fork is refused: its lower layer would be the
 // parent's merged view, which exists only inside a running VM.
@@ -196,11 +196,11 @@ func CreateFork(parent, name string) error {
 	if Exists(name) {
 		return fmt.Errorf("sandbox %q already exists", name)
 	}
-	src, err := BluefilePath(parent)
+	src, err := BoxfilePath(parent)
 	if err != nil {
 		return err
 	}
-	bluefile, err := os.ReadFile(src)
+	boxfile, err := os.ReadFile(src)
 	if err != nil {
 		return err
 	}
@@ -221,11 +221,11 @@ func CreateFork(parent, name string) error {
 	if err := os.WriteFile(filepath.Join(fdir, "fork.json"), meta, 0o644); err != nil {
 		return err
 	}
-	dst, err := BluefilePath(name)
+	dst, err := BoxfilePath(name)
 	if err != nil {
 		return err
 	}
-	return os.WriteFile(dst, bluefile, 0o644)
+	return os.WriteFile(dst, boxfile, 0o644)
 }
 
 // Discard throws away a fork's changes, leaving it a clean fork of its

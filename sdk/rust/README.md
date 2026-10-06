@@ -1,15 +1,15 @@
-# bluebox Rust SDK
+# box Rust SDK
 
 Run code in microVM sandboxes that each have their own kernel, from Rust.
 Blocking API; depends only on `serde`, `serde_json` and `sha2`.
 
 ```toml
 [dependencies]
-bluebox-sdk = { git = "https://github.com/chxperiments/bluebox" }
+sdbox = { git = "https://github.com/chxperiments/bluebox" }
 ```
 
 ```rust
-use bluebox::{Command, Sandbox};
+use sdbox::{Command, Sandbox};
 
 let sb = Sandbox::new("agent")?;
 sb.up()?;                                            // boot once, ~10 ms per exec after
@@ -39,7 +39,7 @@ trial.apply()?;                                     // or trial.discard()?
 A command is `Command::new([...])` (argv, no shell), `Command::sh("...")` or a
 `&str` (shell), with `.stdin(...)` and `.timeout(secs)`. A non-zero exit is an
 `Output`, not an error; `.check()` turns it into `Error::CommandFailed`. The
-SDK talks to `bluebox serve` over an owner-only Unix socket and starts it when
+SDK talks to `box serve` over an owner-only Unix socket and starts it when
 needed.
 
-Tests: `cargo test`; against a real sandbox, `BLUEBOX_E2E=<sandbox> cargo test`.
+Tests: `cargo test`; against a real sandbox, `BOX_E2E=<sandbox> cargo test`.

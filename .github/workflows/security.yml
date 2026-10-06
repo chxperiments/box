@@ -30,10 +30,10 @@ jobs:
           cache: true
 
       - name: build (static, so it can serve as the guest agent)
-        run: CGO_ENABLED=0 go build -o bluebox ./cmd/bluebox
+        run: CGO_ENABLED=0 go build -o box ./cmd/box
 
       - name: doctor
-        run: ./bluebox doctor
+        run: ./box doctor
 
       - name: escape tests (${{ matrix.isolation }})
-        run: security/escape-test.sh ./bluebox ${{ matrix.isolation }}
+        run: security/escape-test.sh ./box ${{ matrix.isolation }}

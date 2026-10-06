@@ -1,16 +1,16 @@
-//! End to end against a real sandbox: BLUEBOX_E2E=<sandbox> cargo test.
-//! Needs a built sandbox and a running (or startable) bluebox server.
+//! End to end against a real sandbox: BOX_E2E=<sandbox> cargo test.
+//! Needs a built sandbox and a running (or startable) box server.
 
-use bluebox::{Client, Command, Error};
+use sdbox::{Client, Command, Error};
 
 #[test]
 fn against_a_real_sandbox() {
-    let Ok(name) = std::env::var("BLUEBOX_E2E") else {
-        eprintln!("skipped: set BLUEBOX_E2E=<sandbox>");
+    let Ok(name) = std::env::var("BOX_E2E") else {
+        eprintln!("skipped: set BOX_E2E=<sandbox>");
         return;
     };
     let mut c = Client::new().unwrap();
-    if let Ok(bin) = std::env::var("BLUEBOX_BIN") {
+    if let Ok(bin) = std::env::var("BOX_BIN") {
         c = c.with_binary(bin);
     }
     assert!(matches!(

@@ -1,16 +1,16 @@
-// Package bluebox is the Go client for bluebox: microVM sandboxes that start
-// in milliseconds. It talks to `bluebox serve` over a Unix socket only you can
+// Package box is the Go client for box: microVM sandboxes that start
+// in milliseconds. It talks to `box serve` over a Unix socket only you can
 // open, and starts it for you the first time it is needed.
 //
-//	c := bluebox.New()
+//	c := box.New()
 //	sb := c.Sandbox("agent")
 //	if err := sb.Up(ctx); err != nil { ... }
 //	defer sb.Down(ctx)
-//	r, err := sb.Exec(ctx, bluebox.Sh("python3 -c 'print(6*7)'"))
+//	r, err := sb.Exec(ctx, box.Sh("python3 -c 'print(6*7)'"))
 //	fmt.Println(string(r.Stdout), r.ExitCode, r.Duration)
 //
 // Only the standard library is used.
-package bluebox
+package box
 
 import (
 	"bytes"
@@ -38,7 +38,7 @@ type Error struct {
 	Status  int
 }
 
-func (e *Error) Error() string { return "bluebox: " + e.Message }
+func (e *Error) Error() string { return "box: " + e.Message }
 
 // IsNotFound reports whether err is a request for a sandbox that does not exist.
 func IsNotFound(err error) bool { return hasCode(err, "no_sandbox") }
@@ -65,7 +65,7 @@ type Result struct {
 func (r Result) OK() bool { return r.ExitCode == 0 }
 
 // Command is what to run: an argv, with optional stdin and a timeout that
-// overrides the Bluefile's timeout_seconds.
+// overrides the Boxfile's timeout_seconds.
 type Command struct {
 	Argv    []string
 	Stdin   []byte
@@ -78,13 +78,13 @@ func Cmd(argv ...string) Command { return Command{Argv: argv} }
 // Sh runs a shell command line, as you would type it.
 func Sh(line string) Command { return Command{Argv: []string{"sh", "-c", line}} }
 
-// Client is a connection to the local bluebox server.
+// Client is a connection to the local box server.
 type Client struct {
 	// Socket is the server's socket. New sets the default.
 	Socket string
-	// Binary is the bluebox executable, used to start the server.
+	// Binary is the box executable, used to start the server.
 	Binary string
-	// Autostart starts `bluebox serve` when nothing is listening.
+	// Autostart starts `box serve` when nothing is listening.
 	Autostart bool
 	// Idle is how long an autostarted server lingers unused.
 	Idle time.Duration
@@ -95,9 +95,9 @@ type Client struct {
 // New returns a client for the default socket, which starts the server on
 // demand.
 func New() *Client {
-	bin, err := exec.LookPath("bluebox")
+	bin, err := exec.LookPath("box")
 	if err != nil {
-		bin = "bluebox"
+		bin = "box"
 	}
 	sock, _ := DefaultSocket()
 	c := &Client{Socket: sock, Binary: bin, Autostart: true, Idle: 15 * time.Minute}
@@ -109,28 +109,28 @@ func New() *Client {
 	return c
 }
 
-// DefaultSocket mirrors the server's own choice: the bluebox root, or the
+// DefaultSocket mirrors the server's own choice: the box root, or the
 // per-user runtime directory when that path is too long for a Unix socket.
 // It never uses a shared directory, where another user could listen first.
 func DefaultSocket() (string, error) {
-	home := os.Getenv("BLUEBOX_HOME")
+	home := os.Getenv("BOX_HOME")
 	if home == "" {
 		h, err := os.UserHomeDir()
 		if err != nil {
 			return "", err
 		}
-		home = filepath.Join(h, ".bluebox")
+		home = filepath.Join(h, ".box")
 	}
-	p := filepath.Join(home, "bluebox.sock")
+	p := filepath.Join(home, "box.sock")
 	if len(p) <= 103 {
 		return p, nil
 	}
 	run := os.Getenv("XDG_RUNTIME_DIR")
 	if run == "" {
-		return "", fmt.Errorf("socket path %s is too long; shorten BLUEBOX_HOME or set XDG_RUNTIME_DIR", p)
+		return "", fmt.Errorf("socket path %s is too long; shorten BOX_HOME or set XDG_RUNTIME_DIR", p)
 	}
 	sum := sha256.Sum256([]byte(home))
-	return filepath.Join(run, "bluebox-"+hex.EncodeToString(sum[:6])+".sock"), nil
+	return filepath.Join(run, "box-"+hex.EncodeToString(sum[:6])+".sock"), nil
 }
 
 func (c *Client) do(ctx context.Context, method, path string, in, out any) error {
@@ -142,7 +142,7 @@ func (c *Client) do(ctx context.Context, method, path string, in, out any) error
 		}
 	}
 	for attempt := 0; ; attempt++ {
-		req, err := http.NewRequestWithContext(ctx, method, "http://bluebox"+path, bytes.NewReader(body))
+		req, err := http.NewRequestWithContext(ctx, method, "http://box"+path, bytes.NewReader(body))
 		if err != nil {
 			return err
 		}
@@ -156,7 +156,7 @@ func (c *Client) do(ctx context.Context, method, path string, in, out any) error
 				continue
 			}
 			if noServer(err) {
-				return &Error{Code: "no_server", Message: "server not running at " + c.Socket + "; start it: bluebox serve"}
+				return &Error{Code: "no_server", Message: "server not running at " + c.Socket + "; start it: box serve"}
 			}
 			return err
 		}
@@ -220,7 +220,7 @@ func (c *Client) Sandboxes(ctx context.Context) ([]SandboxInfo, error) {
 }
 
 // Sandbox returns a handle on one sandbox, by name. Create and build it
-// first with the CLI: bluebox new agent --from tiny-python && bluebox build agent
+// first with the CLI: box new agent --from tiny-python && box build agent
 func (c *Client) Sandbox(name string) *Sandbox { return &Sandbox{Name: name, c: c} }
 
 // Sandbox is one sandbox.
@@ -246,7 +246,7 @@ func (s *Sandbox) Exec(ctx context.Context, cmd Command) (Result, error) {
 }
 
 // Run runs cmd in a fresh microVM that is destroyed afterwards. With warm:
-// in the Bluefile it comes from the pool and starts in milliseconds. Stdin is
+// in the Boxfile it comes from the pool and starts in milliseconds. Stdin is
 // not forwarded to a run.
 func (s *Sandbox) Run(ctx context.Context, cmd Command) (Result, error) {
 	cmd.Stdin = nil

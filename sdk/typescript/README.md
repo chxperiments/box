@@ -1,15 +1,15 @@
-# bluebox TypeScript SDK
+# box TypeScript SDK
 
 Run code in microVM sandboxes that each have their own kernel, from Node.
 Node 18+, no dependencies.
 
 ```sh
-npm install ./sdk/typescript          # from a bluebox checkout
-bluebox new agent --from tiny-python && bluebox build agent
+npm install ./sdk/typescript          # from a box checkout
+box new agent --from tiny-python && box build agent
 ```
 
 ```ts
-import { Sandbox } from "bluebox-sdk";
+import { Sandbox } from "box-sdk";
 
 // A persistent microVM: ~10ms per exec.
 const sb = new Sandbox("agent");
@@ -20,7 +20,7 @@ await sb.withUp(async (sb) => {
 });
 
 // A fresh microVM per call, destroyed afterwards. With `warm: 2` in the
-// Bluefile it comes from a pool of booted VMs and starts in ~20-45ms.
+// Boxfile it comes from a pool of booted VMs and starts in ~20-45ms.
 const r = await new Sandbox("agent").run("python3 -c 'print(6 * 7)'");
 r.check(); // throws CommandFailed on a non-zero exit
 ```
@@ -39,12 +39,12 @@ r.check(); // throws CommandFailed on a non-zero exit
 `cmd` is a shell string (`"ls -la | head"`) or an argv array
 (`["ls", "-la"]`, no shell). A non-zero exit resolves to a `Result`; it is
 not an exception. A timeout exits `124` with `timedOut: true`. Errors are
-`BlueboxError` with a `code`, or its subclasses `NotFound` and `NotUp`.
+`BoxError` with a `code`, or its subclasses `NotFound` and `NotUp`.
 
-**How it connects:** the SDK talks to `bluebox serve` over a Unix socket that
+**How it connects:** the SDK talks to `box serve` over a Unix socket that
 only your user can open, and starts the server the first time it is needed.
 An auto-started server exits after 15 minutes unused, and steps aside once
-idle when bluebox is upgraded.
+idle when box is upgraded.
 
 **Files:** `writeFile` and `readFile` run inside the guest, not on the host,
 so a path or symlink the sandbox controls can never redirect a write onto a

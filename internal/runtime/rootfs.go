@@ -11,16 +11,16 @@ import (
 	"path/filepath"
 	"strings"
 
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
 // The krun backend boots from an exported copy of the image rather than
 // podman's storage: a plain directory crun can use as a root. It is made
 // once per image and isolation mode, under
 //
-//	~/.bluebox/rootfs/<name>/<image id>-s<shift>/      the files
-//	~/.bluebox/rootfs/<name>/<image id>-s<shift>.json  the image's config
+//	~/.box/rootfs/<name>/<image id>-s<shift>/      the files
+//	~/.box/rootfs/<name>/<image id>-s<shift>.json  the image's config
 //
 // and every VM overlays it, so VMs never write it. The export runs inside
 // podman's user namespace, where file owners can be set to any mapped ID.
@@ -30,7 +30,7 @@ import (
 
 // rootfsFor returns the exported rootfs for a sandbox, exporting it first if
 // this image has not been yet.
-func rootfsFor(name string, s bluefile.Spec) (dir string, img imageConfig, err error) {
+func rootfsFor(name string, s boxfile.Spec) (dir string, img imageConfig, err error) {
 	id, err := imageID(name)
 	if err != nil {
 		return "", img, err
@@ -67,7 +67,7 @@ func rootfsFor(name string, s bluefile.Spec) (dir string, img imageConfig, err e
 
 // imageID is the built image's id, recorded by Build so a launch does not
 // pay for `podman image inspect` (~250ms); inspected when the record is
-// missing, e.g. an image built by an older bluebox.
+// missing, e.g. an image built by an older box.
 func imageID(name string) (string, error) {
 	if b, err := os.ReadFile(imageIDPath(name)); err == nil && len(strings.TrimSpace(string(b))) >= 12 {
 		return strings.TrimSpace(string(b)), nil
@@ -80,11 +80,11 @@ func imageIDPath(name string) string {
 	return filepath.Join(d, "image-id")
 }
 
-// RecordImageID notes the current image's id beside the Bluefile.
+// RecordImageID notes the current image's id beside the Boxfile.
 func RecordImageID(name string) (string, error) {
 	out, err := exec.Command("podman", "image", "inspect", "--format", "{{.Id}}", sandbox.ImageTag(name)).Output()
 	if err != nil {
-		return "", fmt.Errorf("no image for %s; build it first: bluebox build %s", name, name)
+		return "", fmt.Errorf("no image for %s; build it first: box build %s", name, name)
 	}
 	id := strings.TrimSpace(string(out))
 	os.WriteFile(imageIDPath(name), []byte(id+"\n"), 0o644) // best effort: a miss costs one inspect
@@ -104,7 +104,7 @@ func RemoveRootfs(name string) error {
 	return nil
 }
 
-// ExportRootfs is the `bluebox __export` command: it writes image's filesystem
+// ExportRootfs is the `box __export` command: it writes image's filesystem
 // to dest with owners shifted, and the image's config beside it. It must run
 // inside podman unshare.
 func ExportRootfs(image, dest string, shift int) error {

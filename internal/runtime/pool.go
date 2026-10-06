@@ -1,6 +1,6 @@
 package runtime
 
-// The warm pool keeps `bluebox run`'s promise -- every run gets a fresh
+// The warm pool keeps `box run`'s promise -- every run gets a fresh
 // microVM -- without paying a boot per run. VMs are booted ahead of time and
 // each one serves exactly one run before it is destroyed.
 //
@@ -13,7 +13,7 @@ package runtime
 //	<id>.stale           used, or no longer matching the sandbox; to remove
 //
 // Nothing here is a daemon. A run that uses or misses a VM starts a detached
-// `bluebox __tend`, which removes spent VMs and boots replacements. Tenders
+// `box __tend`, which removes spent VMs and boots replacements. Tenders
 // serialise on a lock, so any number may be started at once.
 
 import (
@@ -32,27 +32,27 @@ import (
 	"syscall"
 	"time"
 
-	"bluebox/internal/agent"
-	"bluebox/internal/bluefile"
-	"bluebox/internal/sandbox"
+	"box/internal/agent"
+	"box/internal/boxfile"
+	"box/internal/sandbox"
 )
 
 // poolLabel marks pooled containers, so a drain finds strays whose file is
 // gone.
-const poolLabel = "bluebox.pool"
+const poolLabel = "box.pool"
 
 type poolEntry struct {
 	upState
 	Fingerprint string `json:"fingerprint"`
 }
 
-// fingerprint identifies what a sandbox's VMs are booted from: its Bluefile,
+// fingerprint identifies what a sandbox's VMs are booted from: its Boxfile,
 // and its Containerfile, which each build rewrites. A pooled VM whose
 // fingerprint no longer matches was booted from an older definition and is
 // discarded rather than used.
 func fingerprint(name string) string {
 	h := sha256.New()
-	if p, err := sandbox.BluefilePath(name); err == nil {
+	if p, err := sandbox.BoxfilePath(name); err == nil {
 		if b, err := os.ReadFile(p); err == nil {
 			h.Write(b)
 		}
@@ -70,7 +70,7 @@ func poolContainer(name string) (string, error) {
 	if _, err := rand.Read(b); err != nil {
 		return "", err
 	}
-	return "bluebox-pool-" + name + "-" + hex.EncodeToString(b), nil
+	return "box-pool-" + name + "-" + hex.EncodeToString(b), nil
 }
 
 func readEntry(path string) (poolEntry, error) {
@@ -123,7 +123,7 @@ func claim(name string) (poolEntry, string, bool) {
 // RunWarm runs argv in a pooled VM, if one is waiting. It reports false when
 // none is, and the caller boots one the usual way; either way the pool is
 // topped up in the background for the next run.
-func RunWarm(name string, s bluefile.Spec, argv []string, streams Streams) (bool, error) {
+func RunWarm(name string, s boxfile.Spec, argv []string, streams Streams) (bool, error) {
 	e, claimed, ok := claim(name)
 	defer SpawnTender(name)
 	if !ok {
@@ -139,7 +139,7 @@ func RunWarm(name string, s bluefile.Spec, argv []string, streams Streams) (bool
 	return true, err
 }
 
-// SpawnTender starts a detached `bluebox __tend <name>` and returns at once.
+// SpawnTender starts a detached `box __tend <name>` and returns at once.
 // It is best-effort: a pool that is not refilled only means the next run
 // boots cold.
 func SpawnTender(name string) {
@@ -213,7 +213,7 @@ func sweep(b Backend, dir, fp string, keep func(poolEntry) bool) []string {
 	return ready
 }
 
-// Tend brings a sandbox's pool to the size its Bluefile asks for: spent and
+// Tend brings a sandbox's pool to the size its Boxfile asks for: spent and
 // outdated VMs are removed, and replacements booted. It holds the pool lock
 // throughout, so concurrent tenders queue and each finds the pool as the last
 // one left it.
@@ -261,7 +261,7 @@ func Tend(name string) error {
 			backendOf(name).Remove(ctr)
 			return err
 		}
-		p := filepath.Join(dir, strings.TrimPrefix(ctr, "bluebox-pool-"+name+"-"))
+		p := filepath.Join(dir, strings.TrimPrefix(ctr, "box-pool-"+name+"-"))
 		// Written aside and renamed in, so a claim never reads half a file.
 		if err := os.WriteFile(p+".partial", b, 0o600); err != nil {
 			backendOf(name).Remove(ctr)
@@ -276,14 +276,14 @@ func Tend(name string) error {
 	return nil
 }
 
-// warmUp runs a no-op, then the Bluefile's warmup lines, in a freshly booted
+// warmUp runs a no-op, then the Boxfile's warmup lines, in a freshly booted
 // VM before it joins the pool. A VM's first command pays for loading the
 // shell, libc and the binary into the guest; left idle, that costs a run
 // ~30ms more than it should. warmup lines let a sandbox preload what its runs
 // actually use -- starting python3 once, say. They are the sandbox's own
-// Bluefile content, like run steps, and a failing one only leaves the VM
+// Boxfile content, like run steps, and a failing one only leaves the VM
 // less warm.
-func warmUp(st upState, s bluefile.Spec) {
+func warmUp(st upState, s boxfile.Spec) {
 	lines := append([]string{":"}, s.Warmup...)
 	for _, l := range lines {
 		agent.Exec(st.Addr, agent.Request{
@@ -332,15 +332,15 @@ func Warm(name string) int {
 	return len(m)
 }
 
-func parseSpec(name string) (bluefile.Spec, error) {
-	p, err := sandbox.BluefilePath(name)
+func parseSpec(name string) (boxfile.Spec, error) {
+	p, err := sandbox.BoxfilePath(name)
 	if err != nil {
-		return bluefile.Spec{}, err
+		return boxfile.Spec{}, err
 	}
-	return bluefile.Parse(p)
+	return boxfile.Parse(p)
 }
 
-// TendLog records a background tender's failure where `bluebox logs` shows
+// TendLog records a background tender's failure where `box logs` shows
 // it, since a detached process has no terminal to report to.
 func TendLog(name string, err error) {
 	if log := openLog(name); log != nil {

@@ -1,3 +1,4 @@
 # compiled binary
-/bluebox
+/box
 /dist/
+__pycache__/

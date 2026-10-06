@@ -1,7 +1,7 @@
 # A sandbox for an AI coding agent to work in.
 # Demonstrates: blueprint provisioning (a non-root user with sudo, a shell
 # profile), a read-only root, and a per-run timeout so a runaway command
-# cannot hang forever. Point the agent at:  bluebox run agent -- <command>
+# cannot hang forever. Point the agent at:  box run agent -- <command>
 
 base: docker.io/library/debian:bookworm-slim
 

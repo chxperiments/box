@@ -1,16 +1,16 @@
 # Roadmap
 
-Where bluebox is going. The full plan, with a checklist and a definition of
+Where box is going. The full plan, with a checklist and a definition of
 done for each milestone, is [#16]. Milestones ship in order, because each one
 depends on the one before. There are no dates.
 
 ## Shipped
 
-- **v0.2:** Bluefile validation, declarative `mounts:`, `restore`, named
+- **v0.2:** Boxfile validation, declarative `mounts:`, `restore`, named
   snapshots, isolation re-checked on every run.
 - **v0.3:** VMM confinement and `isolation: strict`, the escape suite,
   `up`/`exec`, the warm pool, forks, three backends (podman, krun,
-  firecracker), `bluebox data`, SDKs for Python, TypeScript, Go and Rust, and
+  firecracker), `box data`, SDKs for Python, TypeScript, Go and Rust, and
   the MCP server.
 
 ## Next
@@ -32,7 +32,7 @@ depends on the one before. There are no dates.
     macOS it uses Apple's Virtualization framework directly, so every feature
     works there without a podman machine; on Linux it adds QEMU as a fourth
     engine.
-  - Logs and metrics, a systemd unit, a versioned Bluefile and API with a
+  - Logs and metrics, a systemd unit, a versioned Boxfile and API with a
     compatibility promise, published SDKs, deb/rpm/Homebrew packages.
 - **v0.9, multi-tenant server mode:** tenants, quotas, Firecracker only, an
   audit log.
