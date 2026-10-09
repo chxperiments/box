@@ -647,3 +647,8 @@ h3 { font-weight: 400; }
 .nav-links a:active, .nav-links a[aria-current="page"] { color: #ffffff; }
 .nav-links a:focus-visible { outline-color: var(--signal); }
 ::selection { background: var(--signal); color: #ffffff; }
+
+/* The film: a plain frame, no autoplay (it has a voice), loaded on play. */
+.film h2 { margin-bottom: 1.5rem; }
+.film video { display: block; width: 100%; height: auto; aspect-ratio: 16 / 9; background: #000000; border: 1.5px solid var(--line); }
+.film video::cue { font-family: var(--sans); background: rgba(0, 0, 0, 0.75); }

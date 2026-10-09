@@ -260,7 +260,19 @@ overview = f"""
     <div class="cta-row">
       <a class="btn btn-primary" href="docs.html">Read the docs</a>
       <a class="btn btn-ghost" href="architecture.html">How it works</a>
+      <a class="btn btn-ghost" href="#film">Watch the film</a>
     </div>
+  </div>
+</section>
+
+<section class="section" id="film">
+  <div class="wrap film">
+    <h2>box, in 39 seconds.</h2>
+    <video controls playsinline preload="none" poster="assets/box-launch-poster.jpg" width="1920" height="1080">
+      <source src="assets/box-launch.mp4" type="video/mp4">
+      <track kind="captions" src="assets/box-launch.vtt" srclang="en" label="English">
+      <a href="assets/box-launch.mp4">Download the film (MP4, 3 MB)</a>
+    </video>
   </div>
 </section>
 
