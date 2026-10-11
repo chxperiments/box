@@ -417,8 +417,7 @@ func SnapshotPath(name, ref string) (string, error) {
 }
 
 // checkMember rejects an archive entry that would write outside the directory
-// it is extracted into. GNU tar refuses these itself, but bsdtar (the tar on
-// macOS) differs, so the check is made here rather than assumed of the tool.
+// it is extracted into.
 func checkMember(m string) error {
 	// Checked before the trailing slash is trimmed, or a bare "/" would look
 	// like the archive root rather than an absolute path.
@@ -440,58 +439,66 @@ func checkMember(m string) error {
 	return nil
 }
 
-// VerifyArchive reads an archive's index and fails if any entry would land
-// outside the extraction directory.
-func VerifyArchive(archive string) error {
-	out, err := exec.Command("tar", "-tzf", archive).Output()
+// restoreStaging is the prefix of the directory a restore of name works in,
+// beside the data directories. The leading dot is something ValidName never
+// produces, so it cannot be, or be removed as, another sandbox's /data.
+func restoreStaging(name string) (parent, prefix string, err error) {
+	data, err := DataDir(name)
 	if err != nil {
-		return fmt.Errorf("cannot read %s as a gzip archive", filepath.Base(archive))
+		return "", "", err
 	}
-	for _, m := range strings.Split(strings.TrimRight(string(out), "\n"), "\n") {
-		if m == "" {
-			continue
-		}
-		if err := checkMember(m); err != nil {
-			return err
-		}
-	}
-	return nil
+	return filepath.Dir(data), "." + name + ".restore-", nil
 }
 
 // Restore replaces a sandbox's /data with the contents of an archive. The
-// archive is checked first, then unpacked beside the existing data and swapped
-// in only once it is complete, so a failed restore leaves /data as it was.
+// archive is unpacked beside the existing data by ExtractArchive and swapped
+// in only once it is complete, so a refused or failed restore leaves /data as
+// it was.
 func Restore(name, archive string) error {
 	data, err := DataDir(name)
 	if err != nil {
 		return err
 	}
-	if err := VerifyArchive(archive); err != nil {
+	parent, prefix, err := restoreStaging(name)
+	if err != nil {
 		return err
 	}
-	staged, replaced := data+".restoring", data+".replaced"
-	removeTree(staged)
-	removeTree(replaced)
-	if err := os.MkdirAll(staged, 0o755); err != nil {
+	if err := os.MkdirAll(parent, 0o755); err != nil {
 		return err
 	}
-	cmd := exec.Command("tar", "-xzf", archive, "-C", staged)
-	if msg, err := cmd.CombinedOutput(); err != nil {
-		os.RemoveAll(staged)
-		return fmt.Errorf("tar: %s", strings.TrimSpace(string(msg)))
+	// Left by a restore that was killed partway; nothing else uses the prefix.
+	if old, _ := filepath.Glob(filepath.Join(parent, prefix+"*")); len(old) > 0 {
+		for _, o := range old {
+			removeTree(o)
+		}
 	}
-	if _, err := os.Stat(data); err == nil {
+	work, err := os.MkdirTemp(parent, prefix)
+	if err != nil {
+		return err
+	}
+	defer removeTree(work)
+	staged, replaced := filepath.Join(work, "new"), filepath.Join(work, "old")
+	if err := os.Mkdir(staged, 0o755); err != nil {
+		return err
+	}
+	f, err := os.Open(archive)
+	if err != nil {
+		return err
+	}
+	err = ExtractArchive(f, staged)
+	f.Close()
+	if err != nil {
+		return fmt.Errorf("refusing %s: %w", filepath.Base(archive), err)
+	}
+	if _, err := os.Lstat(data); err == nil {
 		if err := os.Rename(data, replaced); err != nil {
-			os.RemoveAll(staged)
 			return err
 		}
 	}
 	if err := os.Rename(staged, data); err != nil {
 		os.Rename(replaced, data) // put the original back
-		os.RemoveAll(staged)
 		return err
 	}
-	removeTree(replaced)
 	return nil
 }
 
