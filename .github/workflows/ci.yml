@@ -62,3 +62,32 @@ jobs:
       - name: govulncheck
         run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
 
+  # The seed corpora already run as part of go test; this explores past them
+  # for a short while on every change. A crasher lands in testdata/fuzz and
+  # is uploaded, so it can be committed as a regression test.
+  fuzz:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - { pkg: ./internal/sandbox, name: FuzzExtractArchive }
+          - { pkg: ./internal/boxfile, name: FuzzParse }
+          - { pkg: ./internal/agent, name: FuzzUnauthenticatedPeer }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: fuzz
+        run: go test "${{ matrix.target.pkg }}" -run '^$' -fuzz '^${{ matrix.target.name }}$' -fuzztime 60s
+
+      - name: keep the crasher
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: crasher-${{ matrix.target.name }}
+          path: ${{ matrix.target.pkg }}/testdata/fuzz
