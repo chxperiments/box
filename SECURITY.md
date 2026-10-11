@@ -39,6 +39,10 @@ agents.
 
 - **Not a boundary between strict sandboxes.** They share one subordinate UID.
   Strict separates sandboxes from you, not from each other.
+- **Not a sandbox for image builds.** `box build` runs `podman build`, so a
+  Boxfile's `run:` and `blueprint` steps execute in an ordinary rootless
+  container, on the host kernel. Build only Boxfiles you would run yourself.
+  Builds inside a microVM are planned.
 - **Not a check on a lying guest.** The kernel comparison catches a runtime
   that silently fell back to a container. A guest that fakes `uname` passes.
 - **Not a filter on what the guest runs.** `seccomp:` in a Boxfile filters the
@@ -88,11 +92,18 @@ directory.
 
 A guest can write anything into `/data`: symlinks to `/etc/passwd`, `..`
 entries in an archive, device nodes, setuid bits. box's own tools never
-follow a guest's symlink on the host (`restore` checks every archive entry
-before unpacking) and host-side `/data` operations on a strict sandbox go
+follow a guest's symlink on the host and host-side `/data` operations on a strict sandbox go
 through `podman unshare`, where the subordinate UID is reachable and yours is
 not. Your own tools are your responsibility: do not `cp -L` or run scripts out
 of `/data` without looking.
+
+`restore` reads archives itself, in Go, rather than with the host's `tar`,
+and only gzip-compressed tar. Every write goes through an `os.Root` on a
+staging directory. The whole archive is refused if any entry is absolute,
+climbs out with `..`, hard-links outside the archive, passes through or
+replaces a symlink an earlier entry planted, or is a device or fifo. Symlink
+targets are kept as written, since the guest resolves them. Setuid and setgid
+bits are dropped. Only a complete extraction is swapped in for `/data`.
 
 ## Tests
 
