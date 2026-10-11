@@ -421,3 +421,80 @@ func TestRenameRefusesLeftoverDestination(t *testing.T) {
 		t.Error("a refused rename must leave the source data in place")
 	}
 }
+
+// Staging must never use a path that is, or could become, another sandbox's
+// /data: a sandbox may legitimately be called demo.restoring.
+func TestRestoreLeavesLookalikeSandboxesAlone(t *testing.T) {
+	setup(t, "demo")
+	archive, err := Snapshot("demo", "s1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var others []string
+	for _, n := range []string{"demo.restoring", "demo.replaced"} {
+		if _, err := Create(n); err != nil {
+			t.Fatal(err)
+		}
+		d, _ := DataDir(n)
+		os.MkdirAll(d, 0o755)
+		os.WriteFile(filepath.Join(d, "mine"), []byte(n), 0o644)
+		others = append(others, d)
+	}
+	if err := Restore("demo", archive); err != nil {
+		t.Fatal(err)
+	}
+	for _, d := range others {
+		if b, _ := os.ReadFile(filepath.Join(d, "mine")); string(b) != filepath.Base(d) {
+			t.Errorf("restoring demo disturbed %s", filepath.Base(d))
+		}
+	}
+}
+
+// A restore killed partway leaves its staging behind; the next one clears it,
+// and a successful one leaves nothing but the data directories.
+func TestRestoreCleansStaging(t *testing.T) {
+	data := setup(t, "demo")
+	archive, err := Snapshot("demo", "s1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	stale := filepath.Join(filepath.Dir(data), ".demo.restore-123")
+	os.MkdirAll(filepath.Join(stale, "new"), 0o755)
+	if err := Restore("demo", archive); err != nil {
+		t.Fatal(err)
+	}
+	entries, _ := os.ReadDir(filepath.Dir(data))
+	for _, e := range entries {
+		if e.Name() != "demo" {
+			t.Errorf("left behind: %s", e.Name())
+		}
+	}
+}
+
+// Archives written by the system tar (as Snapshot does) restore with their
+// symlinks and hard links intact.
+func TestRestoreReadsSystemTar(t *testing.T) {
+	data := setup(t, "demo")
+	os.Symlink("/usr/bin/env", filepath.Join(data, "abs"))
+	os.Symlink("keep.txt", filepath.Join(data, "rel"))
+	os.Link(filepath.Join(data, "keep.txt"), filepath.Join(data, "sub", "hard"))
+	archive, err := Snapshot("demo", "s1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ResetData("demo"); err != nil {
+		t.Fatal(err)
+	}
+	if err := Restore("demo", archive); err != nil {
+		t.Fatal(err)
+	}
+	if l, _ := os.Readlink(filepath.Join(data, "abs")); l != "/usr/bin/env" {
+		t.Errorf("abs -> %q", l)
+	}
+	if l, _ := os.Readlink(filepath.Join(data, "rel")); l != "keep.txt" {
+		t.Errorf("rel -> %q", l)
+	}
+	if b, _ := os.ReadFile(filepath.Join(data, "sub", "hard")); string(b) != "original" {
+		t.Errorf("hard link = %q", b)
+	}
+}

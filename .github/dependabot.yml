@@ -1,0 +1,20 @@
+# Weekly update PRs for every dependency box ships or builds with. The Go
+# toolchain itself is pinned by the go line in go.mod; govulncheck in CI says
+# when that needs a bump.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directories: ["/", "/sdk/go"]
+    schedule: { interval: weekly }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+  - package-ecosystem: pip
+    directory: /sdk/python
+    schedule: { interval: weekly }
+  - package-ecosystem: npm
+    directory: /sdk/typescript
+    schedule: { interval: weekly }
+  - package-ecosystem: cargo
+    directory: /sdk/rust
+    schedule: { interval: weekly }
