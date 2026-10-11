@@ -46,3 +46,19 @@ jobs:
         run: |
           go run ./cmd/box --help
           go run ./cmd/box --version
+
+  # Known vulnerabilities reachable from box's code, in its dependencies and
+  # in the Go toolchain go.mod pins. A fix is usually a bump of either.
+  vulncheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+
