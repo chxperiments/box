@@ -262,6 +262,18 @@ t0=$(date +%s%N); ls / >/dev/null; t1=$(date +%s%N)
   || fail "host slowed by a guest fork bomb"
 
 echo
+echo "nothing left behind"
+# A run's VM is gone when the run is; only the sandbox that is up stays.
+"$BB" run "$NAME" -- true >/dev/null 2>&1
+sleep 1
+case "$BACKEND" in
+  firecracker) left=$(podman unshare crun --root "${XDG_RUNTIME_DIR:-/tmp}/box/fc" list 2>/dev/null | awk -v up="box-up-$NAME" 'NR>1 && $1 ~ /^box-/ && $1 != up' | wc -l) ;;
+  krun) left=$(podman unshare krun --root "${XDG_RUNTIME_DIR:-/tmp}/box/krun" list 2>/dev/null | awk -v up="box-up-$NAME" 'NR>1 && $1 ~ /^box-/ && $1 != up' | wc -l) ;;
+  *) left=$(podman ps -a --format '{{.Names}}' 2>/dev/null | grep "^box-$NAME-" | wc -l) ;;
+esac
+[ "$left" -eq 0 ] && pass "no VM outlives its run" || fail "$left VM(s) still running after their run ended"
+
+echo
 if [ "$FAILS" -eq 0 ]; then
   echo "no escapes."
 else

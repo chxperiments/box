@@ -17,6 +17,14 @@ import (
 // pause process exists. The environment podman unshare would set is set the
 // same way, so helpers that check for it behave identically.
 func inPodmanNS(argv ...string) *exec.Cmd {
+	// Already inside it -- `box __fc` and the other helpers run there --
+	// the namespace cannot be entered again: setns into the user namespace
+	// one is in fails with EINVAL. Run argv directly. Without this, a
+	// Firecracker VM torn down from inside never got its crun kill, and every
+	// run and snapshot left its VM running.
+	if os.Getenv("_CONTAINERS_USERNS_CONFIGURED") != "" {
+		return exec.Command(argv[0], argv[1:]...)
+	}
 	if pid := pausePID(); pid > 0 {
 		args := []string{"--user", "--mount", "--preserve-credentials", "--target", strconv.Itoa(pid), "--"}
 		cmd := exec.Command("nsenter", append(args, argv...)...)
