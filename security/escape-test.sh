@@ -177,8 +177,30 @@ if [ -n "$vmm" ] && [ -r "/proc/$vmm/status" ]; then
   else
     warn "VMM runs as your own UID $uid (standard isolation; use isolation: strict for agents)"
   fi
-  [ "$(readlink /proc/$vmm/ns/net)" != "$(readlink /proc/self/ns/net)" ] && pass "VMM is in its own network namespace" \
-    || fail "VMM shares the host network namespace"
+  # A VMM running as another UID hides its namespace links; podman's
+  # namespace can read them. An unreadable link is a failure, not a pass.
+  vmm_net=$(readlink "/proc/$vmm/ns/net" 2>/dev/null || podman unshare readlink "/proc/$vmm/ns/net" 2>/dev/null)
+  if [ -z "$vmm_net" ]; then
+    fail "could not read the VMM's network namespace"
+  elif [ "$vmm_net" != "$(readlink /proc/self/ns/net)" ]; then
+    pass "VMM is in its own network namespace"
+  else
+    fail "VMM shares the host network namespace"
+  fi
+  # box's own security report must agree with what this script read from
+  # /proc itself.
+  report=$("$BB" inspect "$NAME" --security-report=json 2>/dev/null)
+  if echo "$report" | python3 -c '
+import json, sys
+r = json.load(sys.stdin); l = r.get("live") or {}
+uid, cap = int(sys.argv[1]), int(sys.argv[2], 16)
+ok = (l.get("matches_configuration") and r["vmm"]["host_uid"] == uid and l.get("host_uid") == uid
+      and len(r["vmm"]["capabilities"]) == bin(cap).count("1"))
+sys.exit(0 if ok else 1)' "$uid" "$cap"; then
+    pass "box inspect --security-report matches the running VMM"
+  else
+    fail "box inspect --security-report disagrees with the running VMM"
+  fi
 else
   fail "could not inspect the VMM process"
 fi

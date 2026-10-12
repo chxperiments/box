@@ -724,6 +724,7 @@ CLI = [
     ("reset <name>", "Empty /data"),
     ("serve", "The local API the SDKs use"),
     ("doctor", "Check the host setup, with a fix for each failure"),
+    ("inspect <name> [--security-report=json]", "What the sandbox can and cannot touch, read from the configuration box applies and checked against the running VMM"),
     ("ls, env, logs, verify", "Inspect sandboxes"),
     ("rename, destroy, nuke", "Remove or rename"),
 ]

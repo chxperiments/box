@@ -46,6 +46,18 @@ rather than let two sandboxes share a UID. `box doctor` shows how many strict
 sandboxes your range holds. A destroyed sandbox's kept `/data` is handed back
 to you, so a later sandbox given the same slot does not own it.
 
+## Checking it yourself
+
+`box inspect <name> --security-report` (or `=json`) states what a sandbox's
+VMM can and cannot touch: its host UID, capabilities, `no_new_privs`,
+seccomp, namespaces and limits, the network, `/data` and every host mount,
+and what box last proved about the kernel boundary. It is read back out of
+the configuration box hands the backend -- podman's arguments, or the OCI
+spec for krun and the Firecracker jail -- so it cannot describe a confinement
+box does not apply. When the sandbox is up, the running VMM is read from
+`/proc` as well, and any difference is a failure (exit status 1). The escape
+suite checks the report against the VMM itself.
+
 ## What it is not
 
 - **Not a sandbox for image builds.** `box build` runs `podman build`, so a

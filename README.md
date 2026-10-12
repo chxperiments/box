@@ -72,7 +72,9 @@ with Sandbox("devbox") as sb:
 Each sandbox is a microVM under KVM, and the VMM itself is confined: no new
 privileges, seccomp, a reduced capability set, its own network namespace and,
 under `isolation: strict`, a UID that is not yours.
-`security/escape-test.sh` tries what an agent gone wrong would. See
+`box inspect <name> --security-report` shows what a sandbox can and cannot
+touch, read from the configuration box applies and checked against the running
+VMM. `security/escape-test.sh` tries what an agent gone wrong would. See
 [SECURITY.md](SECURITY.md) for the threat model.
 
 ## Development

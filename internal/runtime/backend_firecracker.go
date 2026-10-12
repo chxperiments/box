@@ -127,6 +127,12 @@ func fcLaunchCmd(r fcRun) (*exec.Cmd, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Firecracker's API and vsock sockets live in the VM's directory. Past
+	// the Unix socket limit it cannot create them and only says it never
+	// opened its API socket, so say what is wrong instead.
+	if p := filepath.Join(dir, "api.sock"); len(p) > 103 {
+		return nil, fmt.Errorf("the VM's socket path %s is %d bytes, longer than a Unix socket allows (103); shorten BOX_HOME", p, len(p))
+	}
 	fcBackend{}.Remove(r.VM)
 	if err := os.MkdirAll(dir, 0o700); err != nil {
 		return nil, err
