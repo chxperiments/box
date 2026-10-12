@@ -29,7 +29,7 @@ FAQ = [
     ("Can a sandbox reach the internet or my machine?",
      "With <code>network: bridge</code> it reaches the internet; with <code>network: none</code> it has no network at all. Either way it has its own network namespace and cannot reach services on your host's loopback. It sees only the host directories its Boxfile declares, read-only unless you say <code>rw</code>."),
     ("Can my AI agent break anything?",
-     "Not outside its sandbox. Inside, it can do anything, even <code>rm -rf /</code>, and the next run starts clean. Only <code>/data</code> and the host folders you declare are kept, and forks let you review its changes before they reach your data. Use <code>isolation: strict</code>: the VMM around the agent is confined and runs as a UID that is not yours. box is built for your own agents, not for hosting strangers' code, and strict sandboxes share one UID between them. <a href=\"security.html\">The threat model</a> covers what it does not protect."),
+     "Not outside its sandbox. Inside, it can do anything, even <code>rm -rf /</code>, and the next run starts clean. Only <code>/data</code> and the host folders you declare are kept, and forks let you review its changes before they reach your data. Use <code>isolation: strict</code>: the VMM around the agent is confined and runs as a UID that is not yours. Each strict sandbox gets a UID of its own, so one cannot reach another's files. box is built for your own agents, not for hosting strangers' code. <a href=\"security.html\">The threat model</a> covers what it does not protect."),
     ("Which backend should I use?",
      "Start with <code>podman</code>, the default: it supports everything. <code>krun</code> boots faster but supports <code>isolation: standard</code> only, for now. <code>firecracker</code> is fastest to start but is x86_64-only and has no network, host mounts or forks yet."),
     ("How do I let an agent use it?",
@@ -550,7 +550,7 @@ security = f"""
     <div>
       {art.security()}
       <div class="note prose">
-      <p><b>Use <code>isolation: strict</code> for agents.</b> Under standard isolation the VMM runs as your user, so escaping both the guest kernel and the VMM lands in your account. Strict maps it to your first subordinate UID instead.</p>
+      <p><b>Use <code>isolation: strict</code> for agents.</b> Under standard isolation the VMM runs as your user, so escaping both the guest kernel and the VMM lands in your account. Strict maps it to a subordinate UID of the sandbox's own instead, which owns nothing of yours and nothing of any other sandbox's.</p>
       </div>
     </div>
   </div>
@@ -581,7 +581,6 @@ security = f"""
       <ul>
         <li><b>Not egress control, yet.</b> A sandbox with a network can send what it can read. Per-sandbox allowlists are planned.</li>
         <li><b>Not a secrets boundary.</b> Anything in <code>/data</code>, a mount or <code>env:</code> is the workload's. Credential brokering is planned.</li>
-        <li><b>Not a boundary between strict sandboxes.</b> They share one subordinate UID.</li>
         <li><b>Not a check on a lying guest.</b> The kernel comparison catches a runtime that fell back to a container, not a guest that fakes <code>uname</code>.</li>
         <li><b>Not multi-tenant.</b> box is one user's tool on their own machine.</li>
       </ul>
@@ -693,7 +692,7 @@ def api_code(name, py, ts, go, rs):
 BOXFILE_FIELDS = [
     ("base", "image reference", "alpine:latest", "The image every VM starts from."),
     ("backend", "podman, krun, firecracker", "podman", "What boots the VM. See Architecture."),
-    ("isolation", "standard, strict", "standard", "strict runs the VMM as a subordinate UID."),
+    ("isolation", "standard, strict", "standard", "strict runs the VMM as a subordinate UID of the sandbox's own."),
     ("cpus", "1 to 16", "2", "vCPUs."),
     ("ram_mib", "128 and up", "2048", "Guest RAM in MiB."),
     ("network", "bridge, none", "bridge", "Internet access, or none at all."),

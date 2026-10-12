@@ -29,16 +29,25 @@ as it can:
   grants by default are dropped
 - a pids limit and a memory limit (`ram_mib` + 256 MiB)
 - only the directories the Boxfile declares, `/data` and any `mounts:`
-- with `isolation: strict`, a subordinate host UID that owns nothing of yours
+- with `isolation: strict`, a subordinate host UID of its own, which owns
+  nothing of yours and nothing of any other sandbox's
 
 Under standard isolation the VMM runs as your user. Escaping both the guest
 kernel and libkrun then lands in your account. Use `isolation: strict` for
 agents.
 
+Under strict, each sandbox gets its own slot of 65536 IDs from your
+subordinate range (`/etc/subuid`, `/etc/subgid`), recorded with the sandbox
+and freed when it is destroyed; a fork shares its parent's, because they share
+files. Its `/data` belongs to that UID, with your group and mode 0750: you can
+read it, no other sandbox's UID can. When the range has no free slot, box
+refuses to start the sandbox and prints the `usermod` line that adds one,
+rather than let two sandboxes share a UID. `box doctor` shows how many strict
+sandboxes your range holds. A destroyed sandbox's kept `/data` is handed back
+to you, so a later sandbox given the same slot does not own it.
+
 ## What it is not
 
-- **Not a boundary between strict sandboxes.** They share one subordinate UID.
-  Strict separates sandboxes from you, not from each other.
 - **Not a sandbox for image builds.** `box build` runs `podman build`, so a
   Boxfile's `run:` and `blueprint` steps execute in an ordinary rootless
   container, on the host kernel. Build only Boxfiles you would run yourself.
@@ -93,8 +102,9 @@ directory.
 A guest can write anything into `/data`: symlinks to `/etc/passwd`, `..`
 entries in an archive, device nodes, setuid bits. box's own tools never
 follow a guest's symlink on the host and host-side `/data` operations on a strict sandbox go
-through `podman unshare`, where the subordinate UID is reachable and yours is
-not. Your own tools are your responsibility: do not `cp -L` or run scripts out
+through `podman unshare`, where the sandbox's subordinate UID is reachable.
+Files written into a strict sandbox's `/data` from outside (`box data import`,
+`restore`) are given to that sandbox afterwards, so its guest owns all of it. Your own tools are your responsibility: do not `cp -L` or run scripts out
 of `/data` without looking.
 
 `restore` reads archives itself, in Go, rather than with the host's `tar`,

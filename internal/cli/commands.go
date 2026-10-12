@@ -358,6 +358,13 @@ func restoreCmd() *cobra.Command {
 			if err := sandbox.Restore(name, archive); err != nil {
 				return err
 			}
+			// The archive was unpacked from outside; give its files to the
+			// sandbox, so a strict sandbox's guest owns all of /data again.
+			if s, err := loadSpec(name); err == nil {
+				if err := runtime.ReownData(name, s); err != nil {
+					return err
+				}
+			}
 			runtime.SpawnTender(name)
 			fmt.Printf("restored %s from %s\n", name, filepath.Base(archive))
 			return nil
@@ -524,6 +531,12 @@ func destroyCmd() *cobra.Command {
 				if err := sandbox.RemoveFork(name); err != nil {
 					return err
 				}
+			} else if !withData {
+				// The sandbox's slot is freed with it; the kept /data must
+				// not stay owned by a UID the next strict sandbox may get.
+				if err := runtime.ReleaseData(name); err != nil {
+					return err
+				}
 			}
 			if err := sandbox.Remove(name, withData); err != nil {
 				return err
@@ -567,7 +580,13 @@ func nukeCmd() *cobra.Command {
 				runtime.Down(n)
 				runtime.RemovePool(n)
 				runtime.RemoveImage(n)
+				fork := sandbox.IsFork(n)
 				sandbox.RemoveFork(n)
+				if noData && !fork {
+					if err := runtime.ReleaseData(n); err != nil {
+						return fmt.Errorf("%s: %w", n, err)
+					}
+				}
 				if err := sandbox.Remove(n, !noData); err != nil {
 					return fmt.Errorf("%s: %w", n, err)
 				}

@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"box/internal/agent"
@@ -45,7 +46,11 @@ func vmArgs(name string, s boxfile.Spec, interactive, useKrun bool) ([]string, e
 	if useKrun {
 		args = append(args, "--runtime", "krun")
 	}
-	args = append(args, hardening(s)...)
+	shift, err := idShift(name, s)
+	if err != nil {
+		return nil, err
+	}
+	args = append(args, hardening(s, shift)...)
 	args = append(args,
 		"--network="+s.Network,
 		"--annotation", "krun.cpus="+strconv.Itoa(s.CPUs),
@@ -161,33 +166,28 @@ const vmmPidsLimit = 512
 
 // hardening confines the VMM process on the host. It is the boundary between
 // a guest that has broken out of libkrun and the rest of the machine.
-func hardening(s boxfile.Spec) []string {
+func hardening(s boxfile.Spec, shift int) []string {
 	args := []string{
 		"--security-opt", "no-new-privileges",
 		"--cap-drop=all", "--cap-add=" + vmmCaps,
 		"--pids-limit=" + strconv.Itoa(vmmPidsLimit),
 		"--memory=" + strconv.Itoa(s.RAMMiB+vmmOverheadMiB) + "m",
 	}
-	if s.Isolation == "strict" {
+	if shift > 0 {
 		// Rootless podman maps the sandbox's root to your own UID, so a guest
 		// that escaped libkrun would land in your account. Strict maps it to
-		// the first UID of your subordinate range instead and leaves your UID
-		// out of the mapping entirely: an escape lands in an account that owns
-		// nothing of yours. The range is the same for every strict sandbox, so
-		// it separates sandboxes from you, not from each other.
-		args = append(args, "--uidmap", strictMap, "--gidmap", strictMap)
+		// the sandbox's own slot of your subordinate range instead and leaves
+		// your UID out of the mapping entirely: an escape lands in an account
+		// that owns nothing of yours, and nothing of any other sandbox's.
+		args = append(args, "--uidmap", idMap(shift), "--gidmap", idMap(shift))
 	}
 	return args
 }
 
-// strictMap maps sandbox IDs 0-65535 onto IDs 1-65536 of the rootless user
-// namespace, i.e. onto your subordinate UIDs and never onto you (ID 0 there).
-const strictMap = "0:1:65536"
-
 // prepareData gives /data to whoever the sandbox's root is on the host: you
-// under standard isolation, the first subordinate UID under strict. Ownership
-// only changes when a sandbox switches between the two, so this is a stat on
-// every boot and a chown once.
+// under standard isolation, the sandbox's own subordinate UID under strict.
+// Ownership only changes when a sandbox switches mode or slot, so this is a
+// stat on every boot and a chown once.
 func prepareData(name string, s boxfile.Spec) error {
 	if parent, err := sandbox.Parent(name); err == nil {
 		// A fork's /data is the parent's, overlaid. The lower layer is
@@ -208,37 +208,80 @@ func prepareData(name string, s boxfile.Spec) error {
 		if err != nil {
 			return err
 		}
-		return ownData(upper, s)
+		shift, err := idShift(name, s) // the parent's slot
+		if err != nil {
+			return err
+		}
+		return ownData(upper, shift, false)
 	}
 	data, err := sandbox.DataDir(name)
 	if err != nil {
 		return err
 	}
-	return ownData(data, s)
-}
-
-// ownData gives a data directory to whoever the sandbox's root is on the host.
-func ownData(data string, s boxfile.Spec) error {
-	if err := os.MkdirAll(data, 0o755); err != nil {
-		return err
-	}
-	mine, err := sandbox.OwnedByMe(data)
+	shift, err := idShift(name, s)
 	if err != nil {
 		return err
 	}
-	strict := s.Isolation == "strict"
-	if mine != strict {
-		return nil // already owned by the sandbox's root
+	return ownData(data, shift, false)
+}
+
+// ownData gives a data directory to whoever the sandbox's root is on the
+// host. Under strict that is the sandbox's slot, and the top directory is
+// 0750 with your group: you can still read it, other sandboxes' UIDs cannot.
+// force re-owns everything below too, after files were written into it from
+// outside (an import, a restore); otherwise only a wrong owner on the top
+// directory triggers it.
+func ownData(data string, shift int, force bool) error {
+	if err := os.MkdirAll(data, 0o755); err != nil {
+		return err
 	}
-	// Inside podman unshare, ID 0 is you and ID 1 the first subordinate UID.
-	owner := "0:0"
-	if strict {
-		owner = "1:1"
+	fi, err := os.Stat(data)
+	if err != nil {
+		return err
 	}
-	if out, err := exec.Command("podman", "unshare", "chown", "-R", owner, data).CombinedOutput(); err != nil {
-		return fmt.Errorf("re-owning /data for isolation %s: %s", s.Isolation, strings.TrimSpace(string(out)))
+	st, ok := fi.Sys().(*syscall.Stat_t)
+	if !ok {
+		return nil // not a Unix filesystem: nothing to map
+	}
+	wantUID, ok := hostID(shift, os.Getuid(), subordinateRanges("/etc/subuid"))
+	if !ok {
+		return fmt.Errorf("/data's owner (namespace ID %d) is outside your subordinate range; see box doctor", shift)
+	}
+	if !force && int(st.Uid) == wantUID && (shift == 0 || (int(st.Gid) == os.Getgid() && fi.Mode().Perm() == 0o750)) {
+		return nil
+	}
+	if int(st.Uid) != wantUID || force {
+		owner := fmt.Sprintf("%d:%d", shift, shift)
+		if out, err := exec.Command("podman", "unshare", "chown", "-R", owner, data).CombinedOutput(); err != nil {
+			return fmt.Errorf("re-owning /data: %s", strings.TrimSpace(string(out)))
+		}
+	}
+	if shift > 0 {
+		// The top directory keeps your group (ID 0 in the namespace) and
+		// shuts everyone else out, including every other sandbox's UID.
+		if out, err := exec.Command("podman", "unshare", "sh", "-c",
+			`chown "$1:0" "$2" && chmod 0750 "$2"`, "sh", strconv.Itoa(shift), data).CombinedOutput(); err != nil {
+			return fmt.Errorf("closing /data to other sandboxes: %s", strings.TrimSpace(string(out)))
+		}
 	}
 	return nil
+}
+
+// ReownData re-owns a sandbox's whole /data after files were written into it
+// from outside, so the guest owns all of it.
+func ReownData(name string, s boxfile.Spec) error {
+	if s.Backend == "firecracker" || sandbox.IsFork(name) {
+		return nil // a disk the guest writes itself; forks import via parents
+	}
+	data, err := sandbox.DataDir(name)
+	if err != nil {
+		return err
+	}
+	shift, err := idShift(name, s)
+	if err != nil {
+		return err
+	}
+	return ownData(data, shift, true)
 }
 
 // Build renders the Containerfile from the spec, writes it, and builds the image.

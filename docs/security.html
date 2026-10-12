@@ -55,7 +55,7 @@
   <g class="tick" style="--i:0"><path class="s" d="M250,248 l6,7 l12,-14"/></g><g class="tick" style="--i:1"><path class="s" d="M302,248 l6,7 l12,-14"/></g><g class="tick" style="--i:2"><path class="s" d="M354,248 l6,7 l12,-14"/></g><g class="tick" style="--i:3"><path class="s" d="M406,248 l6,7 l12,-14"/></g><g class="tick" style="--i:4"><path class="s" d="M458,248 l6,7 l12,-14"/></g><g class="tick" style="--i:5"><path class="s" d="M510,248 l6,7 l12,-14"/></g>
 </svg>
       <div class="note prose">
-      <p><b>Use <code>isolation: strict</code> for agents.</b> Under standard isolation the VMM runs as your user, so escaping both the guest kernel and the VMM lands in your account. Strict maps it to your first subordinate UID instead.</p>
+      <p><b>Use <code>isolation: strict</code> for agents.</b> Under standard isolation the VMM runs as your user, so escaping both the guest kernel and the VMM lands in your account. Strict maps it to a subordinate UID of the sandbox's own instead, which owns nothing of yours and nothing of any other sandbox's.</p>
       </div>
     </div>
   </div>
@@ -89,7 +89,6 @@
       <ul>
         <li><b>Not egress control, yet.</b> A sandbox with a network can send what it can read. Per-sandbox allowlists are planned.</li>
         <li><b>Not a secrets boundary.</b> Anything in <code>/data</code>, a mount or <code>env:</code> is the workload's. Credential brokering is planned.</li>
-        <li><b>Not a boundary between strict sandboxes.</b> They share one subordinate UID.</li>
         <li><b>Not a check on a lying guest.</b> The kernel comparison catches a runtime that fell back to a container, not a guest that fakes <code>uname</code>.</li>
         <li><b>Not multi-tenant.</b> box is one user's tool on their own machine.</li>
       </ul>

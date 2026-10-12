@@ -49,7 +49,12 @@ func ImportData(name string, s boxfile.Spec, r io.Reader) error {
 		return err
 	}
 	if mine, err := sandbox.OwnedByMe(data); err == nil && !mine {
-		return hostHelper(r, io.Discard, "__tarin", data)
+		// A strict sandbox's /data: unpack inside podman's namespace, then
+		// give what was unpacked to the sandbox, so its guest owns all of it.
+		if err := hostHelper(r, io.Discard, "__tarin", data); err != nil {
+			return err
+		}
+		return ReownData(name, s)
 	}
 	_, err = sandbox.SafeUntar(r, data)
 	return err

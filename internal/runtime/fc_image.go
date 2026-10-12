@@ -34,9 +34,9 @@ func fcImageDir(name string, s boxfile.Spec) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	shift := 0
-	if s.Isolation == "strict" {
-		shift = 1
+	shift, err := idShift(name, s)
+	if err != nil {
+		return "", err
 	}
 	// The agent is baked into the root disk and the snapshot, so a new
 	// box means a new image; the key includes its hash.
@@ -202,6 +202,10 @@ func fcDataDisk(name string) (string, error) {
 // fcSnapshot boots the image once, waits for its agent, pauses it and
 // snapshots it into dir.
 func fcSnapshot(name string, s boxfile.Spec, dir string) error {
+	shift, err := idShift(name, s)
+	if err != nil {
+		return err
+	}
 	token, err := newToken()
 	if err != nil {
 		return err
@@ -221,7 +225,7 @@ func fcSnapshot(name string, s boxfile.Spec, dir string) error {
 	vm := "box-snap-" + name
 	cmd, err := fcLaunchCmd(fcRun{
 		Mode: "snapshot", Sandbox: name, VM: vm, Image: dir, Disk: placeholder,
-		CPUs: s.CPUs, RAMMiB: s.RAMMiB, Strict: s.Isolation == "strict",
+		CPUs: s.CPUs, RAMMiB: s.RAMMiB, Shift: shift,
 		ReadOnly: s.ReadOnlyRootfs, BootToken: token, Spec: s,
 	})
 	if err != nil {

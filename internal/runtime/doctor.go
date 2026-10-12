@@ -80,8 +80,20 @@ func Doctor() []Check {
 		add(Check{Name: "subordinate UIDs", Warn: true,
 			Detail: "none for " + currentUser() + " in /etc/subuid: isolation: strict cannot run",
 			Fix:    "sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 " + currentUser()})
+	} else if n := slotCapacity(); n == 0 {
+		add(Check{Name: "subordinate UIDs", Warn: true,
+			Detail: ids + fmt.Sprintf(": fewer than %d IDs, so isolation: strict cannot run", slotSize),
+			Fix:    "sudo usermod --add-subuids 100000-165535 --add-subgids 100000-165535 " + currentUser()})
 	} else {
-		add(Check{Name: "subordinate UIDs", OK: true, Detail: ids})
+		detail := ids + fmt.Sprintf(": room for %d strict sandbox(es), each with its own UIDs", n)
+		check := Check{Name: "subordinate UIDs", OK: true, Detail: detail}
+		if n < 4 {
+			start := freeSubordinateStart()
+			check = Check{Name: "subordinate UIDs", Warn: true, Detail: detail,
+				Fix: fmt.Sprintf("sudo usermod --add-subuids %d-%d --add-subgids %d-%d %s && podman system migrate",
+					start, start+64*slotSize-1, start, start+64*slotSize-1, currentUser())}
+		}
+		add(check)
 	}
 
 	if exe, err := os.Executable(); err == nil {

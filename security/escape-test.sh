@@ -183,6 +183,44 @@ else
   fail "could not inspect the VMM process"
 fi
 
+if [ "$ISOLATION" = strict ] && [ -n "$vmm" ] && [ -r "/proc/$vmm/status" ]; then
+  echo
+  echo "other sandboxes"
+  # Each strict sandbox runs as its own slot of subordinate IDs; what it
+  # keeps must be closed to every other sandbox's UID.
+  if [ "$BACKEND" = firecracker ]; then
+    target="$BOX_HOME/disks/$NAME.ext4"; want_mode=600
+  else
+    target="$BOX_HOME/data/$NAME"; want_mode=750
+  fi
+  read -r t_uid t_gid t_mode < <(stat -c '%u %g %a' "$target" 2>/dev/null)
+  [ "$t_uid" = "$uid" ] && pass "the VMM's UID ($uid) owns this sandbox's /data, and only this sandbox runs as it" \
+    || fail "/data is owned by $t_uid, but the VMM runs as $uid"
+  if [ "$t_mode" = "$want_mode" ] && { [ "$BACKEND" = firecracker ] || [ "$t_gid" = "$(id -g)" ]; }; then
+    pass "/data is closed to other sandboxes (mode $t_mode)"
+  else
+    fail "/data is open to other sandboxes (mode $t_mode, group $t_gid)"
+  fi
+  # Then try it: a UID from another slot reads the sandbox's files.
+  slot=$(cat "$BOX_HOME/sandboxes/$NAME/slot" 2>/dev/null)
+  total=$(awk -F: -v u="$(id -un)" -v n="$(id -u)" '($1==u||$1==n){s+=$3} END{print s+0}' /etc/subuid)
+  other=""
+  if [ -n "$slot" ] && [ $(( (slot + 2) * 65536 )) -le "$total" ]; then other=$(( 1 + (slot + 1) * 65536 ))
+  elif [ -n "$slot" ] && [ "$slot" -gt 0 ]; then other=$(( 1 + (slot - 1) * 65536 )); fi
+  if [ -z "$other" ]; then
+    warn "skipped reading as another sandbox's UID: /etc/subuid holds one strict sandbox ($total IDs)"
+  elif ! command -v setpriv >/dev/null; then
+    warn "skipped reading as another sandbox's UID: setpriv is not installed"
+  else
+    if [ "$BACKEND" = firecracker ]; then probe="$target"; else probe="$target/w"; fi
+    if podman unshare setpriv --reuid="$other" --regid="$other" --clear-groups cat "$probe" >/dev/null 2>&1; then
+      fail "another sandbox's UID read this sandbox's /data"
+    else
+      pass "another sandbox's UID cannot read this sandbox's /data"
+    fi
+  fi
+fi
+
 echo
 echo "resource limits"
 if [ "$BACKEND" != podman ] && [ -n "$vmm" ]; then

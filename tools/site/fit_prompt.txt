@@ -27,7 +27,7 @@ base (image ref), backend, cpus (max 16), ram_mib, network (bridge = internet, n
 
 ## Security model
 Two layers: the guest runs on its own kernel under KVM, and the VMM process on the host is itself confined (no_new_privs, seccomp, its own network namespace, pids and memory limits, a reduced capability set; Firecracker's VMM runs with zero capabilities). With `isolation: strict` the VMM runs as a subordinate UID instead of yours, so escaping both the VM and the VMM does not land in your account. Use strict for agents. An escape test suite ships in the repo.
-Not covered: all strict sandboxes share one subordinate UID, so strict separates sandboxes from you, not from each other. The kernel check catches a fallback to a plain container but cannot catch a guest that lies about its kernel. It is not designed for hostile multi-tenant hosting.
+Each strict sandbox gets its own subordinate UID, so one sandbox cannot reach another's files; the number of strict sandboxes is limited by the user's /etc/subuid range (box doctor shows it, and box prints the fix when it runs out). Not covered: the kernel check catches a fallback to a plain container but cannot catch a guest that lies about its kernel. It is not designed for hostile multi-tenant hosting.
 
 ## Requirements and limits
 Linux with KVM (/dev/kvm), podman and libkrun (crun built with +LIBKRUN). macOS works through a podman machine, but up/exec, the warm pool, forks and the krun and firecracker backends are Linux-only. It runs on your machine or your server: it is not a hosted service and has no GPU support. `box shell` has a TTY; `exec` does not yet.

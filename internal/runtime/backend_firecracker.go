@@ -72,7 +72,7 @@ type fcRun struct {
 	Disk      string            `json:"disk"`
 	CPUs      int               `json:"cpus"`
 	RAMMiB    int               `json:"ram_mib"`
-	Strict    bool              `json:"strict"`
+	Shift     int               `json:"shift"` // 0 standard; strict: the sandbox's slot in podman's namespace
 	ReadOnly  bool              `json:"readonly"`
 	Argv      []string          `json:"argv,omitempty"`
 	Stdin     bool              `json:"stdin,omitempty"`
@@ -96,6 +96,10 @@ func (b fcBackend) Launch(name string, s boxfile.Spec, l Launch) (*exec.Cmd, err
 	if err != nil {
 		return nil, err
 	}
+	shift, err := idShift(name, s)
+	if err != nil {
+		return nil, err
+	}
 	disk, err := fcDataDisk(name)
 	if err != nil {
 		return nil, err
@@ -106,7 +110,7 @@ func (b fcBackend) Launch(name string, s boxfile.Spec, l Launch) (*exec.Cmd, err
 	}
 	r := fcRun{
 		Mode: "run", Sandbox: name, VM: vm, Image: img, Disk: disk,
-		CPUs: s.CPUs, RAMMiB: s.RAMMiB, Strict: s.Isolation == "strict",
+		CPUs: s.CPUs, RAMMiB: s.RAMMiB, Shift: shift,
 		ReadOnly: s.ReadOnlyRootfs, Argv: l.Argv, Stdin: l.Interactive,
 		Labels: l.Labels, Spec: s,
 	}
@@ -324,14 +328,18 @@ func fcStart(dir string, r fcRun) error {
 	if err != nil {
 		return err
 	}
-	if r.Strict {
-		// The VMM runs as the subordinate UID (1 in this namespace). It owns
-		// the /data disk; the VM directory stays yours, shared with it through
-		// the group, so it can create its sockets there and nobody else can.
-		if err := os.Lchown(r.Disk, 1, 1); err != nil {
+	if r.Shift > 0 {
+		// The VMM runs as the sandbox's own subordinate UID (its shift in
+		// this namespace). It owns the /data disk; the VM directory stays
+		// yours, shared with it through the group, so it can create its
+		// sockets there and nobody else can -- no other sandbox either.
+		if err := os.Lchown(r.Disk, r.Shift, r.Shift); err != nil {
 			return err
 		}
-		if err := os.Lchown(dir, 0, 1); err != nil {
+		if err := os.Chmod(r.Disk, 0o600); err != nil {
+			return err
+		}
+		if err := os.Lchown(dir, 0, r.Shift); err != nil {
 			return err
 		}
 		if err := os.Chmod(dir, 0o770); err != nil {
@@ -460,13 +468,14 @@ func fcSpec(r fcRun, dir, jail, binDir, binName, kernelDir string) ([]byte, erro
 			Seccomp:       seccomp,
 		},
 	}
-	if r.Strict {
-		// The VMM runs as UID 1 of podman's namespace -- your first
-		// subordinate UID on the host -- rather than in a nested user
-		// namespace: crun sets the mounts up as that namespace's root, where
-		// every path is reachable whatever your home directory's mode, and
-		// only then drops to the VMM's identity, with no capabilities.
-		spec.Process.User = ociUser{UID: 1, GID: 1}
+	if r.Shift > 0 {
+		// The VMM runs as the sandbox's own UID in podman's namespace -- a
+		// subordinate UID on the host that no other sandbox has -- rather
+		// than in a nested user namespace: crun sets the mounts up as that
+		// namespace's root, where every path is reachable whatever your home
+		// directory's mode, and only then drops to the VMM's identity, with
+		// no capabilities.
+		spec.Process.User = ociUser{UID: uint32(r.Shift), GID: uint32(r.Shift)}
 	}
 	return json.MarshalIndent(spec, "", " ")
 }
@@ -593,12 +602,14 @@ func fcRestore(api fcClient, dir string, r fcRun, token string) error {
 		return fmt.Errorf("preparing the restored VM: exit %d: %s", res.Code, strings.TrimSpace(errb.String()))
 	}
 	// The VMM created the sockets as itself; under strict that is the
-	// subordinate UID. Hand them to you, owner and group only, so the CLI
-	// can connect and other users cannot.
-	for _, s := range []string{"v.sock", "api.sock"} {
-		p := filepath.Join(dir, s)
-		os.Lchown(p, 0, 1)
-		os.Chmod(p, 0o660)
+	// sandbox's subordinate UID. Hand them to you, shared with that UID
+	// through the group, so the CLI can connect and nobody else can.
+	if r.Shift > 0 {
+		for _, s := range []string{"v.sock", "api.sock"} {
+			p := filepath.Join(dir, s)
+			os.Lchown(p, 0, r.Shift)
+			os.Chmod(p, 0o660)
+		}
 	}
 	// Kept (owner-only) so teardown can reach the agent to flush /data,
 	// whoever tears the VM down.
