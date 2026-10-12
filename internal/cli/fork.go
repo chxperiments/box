@@ -32,6 +32,15 @@ func forkCmd() *cobra.Command {
 			if err := sandbox.ValidName(name); err != nil {
 				return err
 			}
+			if ps, err := loadSpec(parent); err == nil && ps.Backend == "firecracker" {
+				why := "its Boxfile says backend: firecracker"
+				if c, ok := runtime.ReadAutoChoice(parent); ok {
+					why = "backend: auto picked it: " + c.Reason
+				}
+				return fmt.Errorf("%s runs on firecracker (%s), and forks run on podman for now. "+
+					"Set backend: podman in %s's Boxfile while its /data is empty, or move the data first "+
+					"(box data export, box reset, box build, box data import)", parent, why, parent)
+			}
 			if err := sandbox.CreateFork(parent, name); err != nil {
 				return err
 			}

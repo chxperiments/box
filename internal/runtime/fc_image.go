@@ -168,7 +168,8 @@ mv /out/rootfs.ext4.partial /out/rootfs.ext4`
 
 // fcDataDisk returns the sandbox's /data disk, creating an empty ext4
 // filesystem on first use. It is sparse: its size is a ceiling, not a cost.
-func fcDataDisk(name string) (string, error) {
+// fcDataDiskPath is where a sandbox's /data disk lives, without creating it.
+func fcDataDiskPath(name string) (string, error) {
 	h, err := sandbox.Home()
 	if err != nil {
 		return "", err
@@ -176,7 +177,37 @@ func fcDataDisk(name string) (string, error) {
 	if err := sandbox.ValidName(name); err != nil {
 		return "", err
 	}
-	disk := filepath.Join(h, "disks", name+".ext4")
+	return filepath.Join(h, "disks", name+".ext4"), nil
+}
+
+// ResetFirecrackerData deletes a sandbox's /data disk; the next boot makes
+// an empty one.
+func ResetFirecrackerData(name string) error {
+	disk, err := fcDataDiskPath(name)
+	if err != nil {
+		return err
+	}
+	if err := os.Remove(disk); err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
+}
+
+// FirecrackerDataExists reports whether a sandbox has a /data disk.
+func FirecrackerDataExists(name string) bool {
+	disk, err := fcDataDiskPath(name)
+	if err != nil {
+		return false
+	}
+	_, err = os.Stat(disk)
+	return err == nil
+}
+
+func fcDataDisk(name string) (string, error) {
+	disk, err := fcDataDiskPath(name)
+	if err != nil {
+		return "", err
+	}
 	if _, err := os.Stat(disk); err == nil {
 		return disk, nil
 	}

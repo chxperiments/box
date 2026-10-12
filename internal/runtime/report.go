@@ -27,6 +27,7 @@ import (
 type Report struct {
 	Sandbox    string     `json:"sandbox"`
 	Backend    string     `json:"backend"`
+	ChosenBy   string     `json:"chosen_by"` // the Boxfile, or backend: auto and why
 	Isolation  string     `json:"isolation"`
 	ReadFrom   string     `json:"read_from"`
 	VMM        VMMReport  `json:"vmm"`
@@ -119,7 +120,13 @@ func SecurityReport(name string, s boxfile.Spec) (Report, error) {
 	if err != nil {
 		return Report{}, err
 	}
-	r := Report{Sandbox: name, Backend: b.Name(), Isolation: s.Isolation}
+	r := Report{Sandbox: name, Backend: b.Name(), Isolation: s.Isolation, ChosenBy: "the Boxfile"}
+	if c, ok := ReadAutoChoice(name); ok && c.Backend == b.Name() {
+		r.ChosenBy = "backend: auto (" + c.Reason + ")"
+	}
+	if os.Getenv("BOX_BACKEND") != "" {
+		r.ChosenBy = "BOX_BACKEND, overriding the Boxfile"
+	}
 	if r.Isolation == "" {
 		r.Isolation = "standard"
 	}
@@ -328,7 +335,7 @@ func parseVolume(v string) (MountReport, bool) {
 
 func dataReport(name string, s boxfile.Spec) DataReport {
 	if s.Backend == "firecracker" {
-		d, _ := fcDataDisk(name)
+		d, _ := fcDataDiskPath(name) // a report never creates the disk
 		dr := DataReport{Host: d, Kind: "disk"}
 		statInto(&dr, d)
 		return dr

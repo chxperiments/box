@@ -96,6 +96,16 @@ func Doctor() []Check {
 		add(check)
 	}
 
+	// What backend: auto can choose here. Not a failure: podman runs
+	// everything, firecracker is the stronger choice when it fits.
+	if err := HostFirecracker(); err != nil {
+		add(Check{Name: "backend: auto", OK: true,
+			Detail: "picks podman here; firecracker is not available (" + err.Error() + ")"})
+	} else {
+		add(Check{Name: "backend: auto", OK: true,
+			Detail: "picks firecracker for offline sandboxes without host mounts or a warm pool, podman otherwise"})
+	}
+
 	if exe, err := os.Executable(); err == nil {
 		if dyn, err := dynamicallyLinked(exe); err == nil && dyn {
 			add(Check{Name: "static binary", Warn: true,

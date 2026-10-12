@@ -12,7 +12,8 @@ An open-source CLI (Go, MIT) that runs code in disposable microVMs on your own m
 - `box data import|export <name> <dir>` copies files into or out of `/data`. Exported files are treated as hostile (symlinks never followed, setuid dropped).
 
 ## Backends (`backend:` in the Boxfile)
-- podman (default): podman with the krun runtime (libkrun). Supports everything. Cold run ~1.3–1.5 s.
+- auto (what new Boxfiles say): box picks once per sandbox and records why: firecracker when the Boxfile is offline, has no host mounts, no warm pool and no forks, and the host can run it; podman otherwise. It never moves a sandbox whose /data is on the other engine; it stops and says how to move the data. `box inspect` shows the choice.
+- podman (a Boxfile without the key): podman with the krun runtime (libkrun). Supports everything. Cold run ~1.3–1.5 s.
 - krun: drives crun's libkrun handler directly. Cold run ~0.75–1.1 s. `isolation: standard` only for now.
 - firecracker: restores a snapshot per run, ~0.3 s, no pool needed. x86_64 Linux only; no networking, no host mounts, no forks yet.
 Measured: a warm `run` is ~20–45 ms; `exec` in a running sandbox is ~15 ms for a no-op.

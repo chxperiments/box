@@ -36,7 +36,7 @@ box down devbox
 
 ```yaml
 base: docker.io/library/alpine:latest
-backend: podman        # podman, krun or firecracker
+backend: auto          # firecracker when it fits, else podman; or name one
 isolation: strict      # the VMM runs as a UID that is not yours
 network: bridge        # or none, for no network at all
 warm: 2                # keep VMs booted so runs start in ms

@@ -60,6 +60,7 @@ func inspectCmd() *cobra.Command {
 
 func printReport(r runtime.Report) {
 	fmt.Printf("%s  (backend %s, isolation %s)\n", r.Sandbox, r.Backend, r.Isolation)
+	fmt.Printf("backend chosen by %s\n", r.ChosenBy)
 	fmt.Printf("read from %s\n\n", r.ReadFrom)
 
 	v := r.VMM

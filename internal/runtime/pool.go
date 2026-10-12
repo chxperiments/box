@@ -337,7 +337,12 @@ func parseSpec(name string) (boxfile.Spec, error) {
 	if err != nil {
 		return boxfile.Spec{}, err
 	}
-	return boxfile.Parse(p)
+	s, err := boxfile.Parse(p)
+	if err != nil || s.Backend != "auto" {
+		return s, err
+	}
+	// Everything past here sees the engine auto picked, never "auto".
+	return resolveAuto(name, s)
 }
 
 // TendLog records a background tender's failure where `box logs` shows

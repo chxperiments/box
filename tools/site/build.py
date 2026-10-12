@@ -194,7 +194,7 @@ BOXFILE_LINES = [
      "The image every VM of this sandbox starts from. The package manager is inferred from it.",
      "FROM docker.io/library/alpine:latest"),
     ("backend", "backend: firecracker",
-     "What boots the VM: podman (default), krun (crun with libkrun, no podman), or firecracker (a snapshot restored per run).",
+     "What boots the VM: auto (box picks firecracker when it fits, else podman, once per sandbox), podman, krun (crun with libkrun, no podman), or firecracker (a snapshot restored per run).",
      "a fresh VM in about 0.3 s, restored from a snapshot"),
     ("isolation", "isolation: strict",
      "The VMM process runs as a subordinate host UID that owns nothing of yours. Recommended for agents.",
@@ -691,7 +691,7 @@ def api_code(name, py, ts, go, rs):
 
 BOXFILE_FIELDS = [
     ("base", "image reference", "alpine:latest", "The image every VM starts from."),
-    ("backend", "podman, krun, firecracker", "podman", "What boots the VM. See Architecture."),
+    ("backend", "auto, podman, krun, firecracker", "podman (new Boxfiles: auto)", "What boots the VM. auto picks firecracker when the sandbox is offline, has no host mounts, no warm pool and no forks, and the host can run it; podman otherwise. The pick is made once and shown by box inspect. See Architecture."),
     ("isolation", "standard, strict", "standard", "strict runs the VMM as a subordinate UID of the sandbox's own."),
     ("cpus", "1 to 16", "2", "vCPUs."),
     ("ram_mib", "128 and up", "2048", "Guest RAM in MiB."),

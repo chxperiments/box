@@ -219,10 +219,18 @@ func resetCmd() *cobra.Command {
 			if err := refuseWithForks(name, "reset it"); err != nil {
 				return err
 			}
+			s, err := loadSpec(name)
+			if err != nil {
+				return err
+			}
+			fc := s.Backend == "firecracker" // /data is a disk there
 			// Only ask when there is actually something to lose.
 			empty, err := sandbox.DataEmpty(name)
 			if err != nil {
 				return err
+			}
+			if fc {
+				empty = !runtime.FirecrackerDataExists(name)
 			}
 			if !empty {
 				if err := confirm(fmt.Sprintf("Delete everything in %s's /data?", name), yes); err != nil {
@@ -235,6 +243,11 @@ func resetCmd() *cobra.Command {
 			}
 			if err := sandbox.ResetData(name); err != nil {
 				return err
+			}
+			if fc {
+				if err := runtime.ResetFirecrackerData(name); err != nil {
+					return err
+				}
 			}
 			runtime.SpawnTender(name)
 			fmt.Printf("reset %s\n", name)

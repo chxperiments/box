@@ -107,8 +107,30 @@ var Default = Spec{
 
 // Backends are the values `backend:` accepts. podman drives crun+libkrun
 // through podman; krun drives crun+libkrun directly, skipping podman's
-// per-boot cost; firecracker uses the Firecracker VMM.
-var Backends = []string{"podman", "krun", "firecracker"}
+// per-boot cost; firecracker uses the Firecracker VMM. auto lets box pick,
+// once per sandbox: firecracker when it fits the Boxfile and the host,
+// podman otherwise. A Boxfile without the key keeps podman, so existing
+// sandboxes never move; new Boxfiles say auto.
+var Backends = []string{"auto", "podman", "krun", "firecracker"}
+
+// FirecrackerFits says what in a Boxfile the firecracker backend cannot do,
+// or nil. backend: firecracker refuses such a Boxfile; backend: auto picks
+// podman for it instead.
+func FirecrackerFits(s Spec) error {
+	// /data is a disk there, not a shared directory, and a restore from a
+	// snapshot already starts in tens of milliseconds.
+	switch {
+	case len(s.Mounts) > 0:
+		return errors.New("backend: firecracker has no host mounts; move files with `box data import`")
+	case s.Warm > 0:
+		return errors.New("backend: firecracker restores a snapshot per run; drop warm")
+	case s.Network != "none":
+		return errors.New("backend: firecracker supports network: none for now")
+	case s.Passt:
+		return errors.New("backend: firecracker does not use passt")
+	}
+	return nil
+}
 
 // BackendNames lists the accepted backends for error messages.
 func BackendNames() string { return strings.Join(Backends, ", ") }
@@ -125,7 +147,7 @@ network: bridge       # bridge = internet access, none = offline
 passt: false          # real NIC + default route in the guest (needed for k3s)
 readonly: false       # read-only guest root (/tmp and /data stay writable)
 isolation: standard   # strict: VMM runs as a UID that is not yours (use for agents)
-backend: podman       # podman (default) | krun (direct, faster boots) | firecracker (snapshot per run, no network yet)
+backend: auto         # auto: firecracker when it fits (offline, no mounts, no warm pool), else podman | podman | krun | firecracker
 timeout_seconds: 0    # per-run wall clock limit, 0 = unlimited
 warm: 0               # VMs kept booted so run starts in ms (each holds its RAM)
 
@@ -219,17 +241,8 @@ func (s Spec) validate() error {
 		return fmt.Errorf("backend must be one of %s, got %q", BackendNames(), s.Backend)
 	}
 	if s.Backend == "firecracker" {
-		// /data is a disk there, not a shared directory, and a restore from
-		// a snapshot already starts in tens of milliseconds.
-		switch {
-		case len(s.Mounts) > 0:
-			return errors.New("backend: firecracker has no host mounts; move files with `box data import`")
-		case s.Warm > 0:
-			return errors.New("backend: firecracker restores a snapshot per run; drop warm")
-		case s.Network != "none":
-			return errors.New("backend: firecracker supports network: none for now")
-		case s.Passt:
-			return errors.New("backend: firecracker does not use passt")
+		if err := FirecrackerFits(s); err != nil {
+			return err
 		}
 	}
 	if s.Isolation != "standard" && s.Isolation != "strict" {
