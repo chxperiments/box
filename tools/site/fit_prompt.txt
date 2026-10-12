@@ -19,7 +19,7 @@ An open-source CLI (Go, MIT) that runs code in disposable microVMs on your own m
 Measured: a warm `run` is ~20–45 ms; `exec` in a running sandbox is ~15 ms for a no-op.
 
 ## Boxfile reference (unknown keys are rejected)
-base (image ref), backend, cpus (max 16), ram_mib, network (bridge = internet, none = offline), readonly (read-only root; /tmp and /data stay writable), isolation (standard | strict), timeout_seconds (per run; a timed-out run exits 124), warm (0–8, needs network: bridge), warmup (commands run in each pooled VM first), packages (apk, apt or dnf, chosen from the base), run (build steps), env, mounts (host dir → guest path, ro by default; strict allows ro only), blueprint (users, write_files, runcmd, applied at build time).
+base (image ref), backend, cpus (max 16), ram_mib, network (bridge = internet, none = offline), data_size (caps /data: exact on firecracker, where /data is a disk; on podman/krun box measures it every 2 s and stops a VM that goes over), readonly (read-only root; /tmp and /data stay writable), isolation (standard | strict), timeout_seconds (per run; a timed-out run exits 124), warm (0–8, needs network: bridge), warmup (commands run in each pooled VM first), packages (apk, apt or dnf, chosen from the base), run (build steps), env, mounts (host dir → guest path, ro by default; strict allows ro only), blueprint (users, write_files, runcmd, applied at build time).
 
 ## Driving it
 - CLI: new [--from example], build, run, shell, up, exec, down, fork, diff, apply, discard, snapshot, restore, reset, data import/export, doctor (checks the host and prints fixes), verify, logs, destroy.

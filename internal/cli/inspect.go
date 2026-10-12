@@ -97,6 +97,12 @@ func printReport(r runtime.Report) {
 		data += ", owner " + d.Owner + ", mode " + d.Mode
 	}
 	row("/data", data+"), kept between runs")
+	limit := d.Limit
+	if d.Used != "" {
+		limit += ", " + d.Used + " used"
+	}
+	row("/data limit", limit)
+	row("enforced", d.Enforcement)
 	if len(r.Filesystem.Mounts) == 0 {
 		row("host mounts", "none")
 	}

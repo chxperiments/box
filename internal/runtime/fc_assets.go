@@ -27,8 +27,8 @@ const (
 	fcKernelName  = "vmlinux-6.1.155"
 	fcKernelURL   = "https://s3.amazonaws.com/spec.ccfc.min/firecracker-ci/v1.15/x86_64/" + fcKernelName
 	fcKernelSHA   = "e20e46d0c36c55c0d1014eb20576171b3f3d922260d9f792017aeff53af3d4f2"
-	fcToolsImage  = "localhost/box/fc-tools:latest"
-	fcDataDiskGiB = 8 // sparse: only what /data actually holds is stored
+	fcToolsImage  = "localhost/box/fc-tools:2" // 2: adds resize2fs; a new tag so an old build is not reused
+	fcDataDiskGiB = 8                          // sparse: only what /data actually holds is stored
 )
 
 // fcDir holds Firecracker's assets and every image's disk and snapshot.
@@ -154,7 +154,7 @@ func fcTools() error {
 	}
 	cmd := exec.Command("podman", "build", "-q", "-t", fcToolsImage, "-f", "-", ".")
 	cmd.Dir = os.TempDir()
-	cmd.Stdin = strings.NewReader("FROM docker.io/library/alpine:latest\nRUN apk add --no-cache e2fsprogs tar\n")
+	cmd.Stdin = strings.NewReader("FROM docker.io/library/alpine:latest\nRUN apk add --no-cache e2fsprogs e2fsprogs-extra tar\n")
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return fmt.Errorf("building %s: %s", fcToolsImage, strings.TrimSpace(string(out)))
 	}

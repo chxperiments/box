@@ -130,7 +130,15 @@ func RunWarm(name string, s boxfile.Spec, argv []string, streams Streams) (bool,
 		return false, nil
 	}
 	streams.Stdin = nil // run never forwards stdin, warm or cold
-	err := execOn(name, e.upState, s, "run", argv, streams)
+	if qerr := overQuota(name, s); qerr != nil {
+		os.Rename(claimed, stalePath(claimed))
+		return true, qerr
+	}
+	err := execOn(name, e.upState, s, "run", argv, streams, func() {
+		if b, err := backendFor(s); err == nil {
+			b.Remove(e.Container)
+		}
+	})
 	// One run per VM, whatever happened in it: that is what makes it fresh.
 	os.Rename(claimed, stalePath(claimed))
 	if errors.Is(err, errLost) {

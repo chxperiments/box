@@ -312,6 +312,17 @@ func netnsCmd() *cobra.Command {
 
 // tendCmd tops up a sandbox's warm pool. It is started detached by run and
 // build, never by hand, and reports failures to the sandbox's log.
+func watchDataCmd() *cobra.Command {
+	return &cobra.Command{
+		Use: "__watch-data <name>", Hidden: true,
+		Args:              cobra.ExactArgs(1),
+		ValidArgsFunction: completeNothing,
+		RunE: func(_ *cobra.Command, args []string) error {
+			return runtime.WatchData(args[0])
+		},
+	}
+}
+
 func tendCmd() *cobra.Command {
 	return &cobra.Command{
 		Use: "__tend <name>", Hidden: true,

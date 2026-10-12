@@ -269,7 +269,10 @@ func Exec(name string, s boxfile.Spec, argv []string, streams Streams) error {
 	if err != nil {
 		return err
 	}
-	err = execOn(name, st, s, "exec", argv, streams)
+	if err := overQuota(name, s); err != nil {
+		return err
+	}
+	err = execOn(name, st, s, "exec", argv, streams, func() { Down(name) })
 	if errors.Is(err, errLost) {
 		return fmt.Errorf("%s is not responding (%v); restart it: box down %s && box up %s",
 			name, err, name, name)
@@ -282,7 +285,7 @@ var errLost = errors.New("agent unreachable")
 
 // execOn runs argv through the agent of a running VM, with output streamed
 // and logged the way Run does, and every command gated on the guest kernel.
-func execOn(name string, st upState, s boxfile.Spec, verb string, argv []string, streams Streams) error {
+func execOn(name string, st upState, s boxfile.Spec, verb string, argv []string, streams Streams, stop func()) error {
 	host, err := HostKernel()
 	if err != nil {
 		return err
@@ -296,11 +299,20 @@ func execOn(name string, st upState, s boxfile.Spec, verb string, argv []string,
 	out, errw := tee(streams, log)
 
 	started := time.Now()
+	done := make(chan struct{})
+	exceeded := watchQuota(name, s, done, stop)
 	res, err := agent.Exec(st.Addr, agent.Request{
 		Token:          st.Token,
 		Argv:           argv,
 		TimeoutSeconds: s.TimeoutSeconds,
 	}, kernelGate(host), streams.Stdin, out, errw)
+	close(done)
+	if qerr := exceeded(); qerr != nil {
+		if log != nil {
+			fmt.Fprintf(log, "=== stopped: %v\n", qerr)
+		}
+		return fmt.Errorf("%w; box stopped the VM", qerr)
+	}
 	if log != nil {
 		code := res.Code
 		if err != nil {

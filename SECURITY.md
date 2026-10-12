@@ -28,6 +28,7 @@ as it can:
 - 6 capabilities, the ones virtiofs and low ports need; the other 5 podman
   grants by default are dropped
 - a pids limit and a memory limit (`ram_mib` + 256 MiB)
+- `/data` capped by `data_size` (see below), so an agent cannot fill your disk
 - only the directories the Boxfile declares, `/data` and any `mounts:`
 - with `isolation: strict`, a subordinate host UID of its own, which owns
   nothing of yours and nothing of any other sandbox's
@@ -45,6 +46,20 @@ refuses to start the sandbox and prints the `usermod` line that adds one,
 rather than let two sandboxes share a UID. `box doctor` shows how many strict
 sandboxes your range holds. A destroyed sandbox's kept `/data` is handed back
 to you, so a later sandbox given the same slot does not own it.
+
+## /data's size
+
+`data_size` in the Boxfile caps `/data` (new Boxfiles say 10G). On
+firecracker `/data` is a disk of exactly that size, so the guest's own kernel
+refuses a write that does not fit. On podman and krun `/data` is a host
+directory shared over virtiofs, and a rootless process cannot put a quota on
+it, so box measures it: it refuses to start a sandbox that is over, and
+checks every 2 seconds while one runs -- a cold run, an `exec`, a warm run, or
+a process left running in an `up` sandbox -- stopping the VM when it goes
+over. A fast writer can overshoot by what it writes in those 2 seconds; the
+limit is what the sandbox must get back under, not a wall. A Boxfile without
+`data_size` has no limit on podman and krun (8G on firecracker), and
+`box inspect` warns about it. The escape suite fills `/data` and checks both.
 
 ## Checking it yourself
 

@@ -66,6 +66,7 @@ network: none
 readonly: true
 isolation: $ISOLATION
 backend: firecracker
+data_size: 64M
 EOF
 else
 cat > "$BOX_HOME/sandboxes/$NAME/Boxfile" <<EOF
@@ -76,6 +77,7 @@ network: bridge
 readonly: true
 isolation: $ISOLATION
 backend: $BACKEND
+data_size: 64M
 mounts:
   - host: $WORK/ro
     guest: /ro
@@ -272,6 +274,33 @@ case "$BACKEND" in
   *) left=$(podman ps -a --format '{{.Names}}' 2>/dev/null | grep "^box-$NAME-" | wc -l) ;;
 esac
 [ "$left" -eq 0 ] && pass "no VM outlives its run" || fail "$left VM(s) still running after their run ended"
+
+echo
+echo "host disk"
+# An agent filling /data must not fill the host disk. Last, because it
+# leaves the sandbox over its limit on purpose; on a fresh VM, because the
+# fork bomb above leaves the running one unable to start anything.
+"$BB" down "$NAME" >/dev/null 2>&1
+"$BB" up "$NAME" >/dev/null 2>&1
+wrote=$(guest 'dd if=/dev/zero of=/data/fill bs=1M count=300 2>&1; sync')
+if [ "$BACKEND" = firecracker ]; then
+  # /data is a disk of data_size: the guest's own kernel refuses the rest.
+  size=$(stat -c %s "$BOX_HOME/disks/$NAME.ext4" 2>/dev/null || echo 0)
+  if echo "$wrote" | grep -qi "no space left" && [ "$size" -le $((64 << 20)) ]; then
+    pass "/data cannot outgrow data_size: the guest ran out of space at the 64 MiB disk"
+  else
+    fail "/data outgrew data_size (disk $((size >> 20)) MiB; dd said: $(echo "$wrote" | tail -1))"
+  fi
+else
+  # Directory-backed /data is measured: going over stops the sandbox, and it
+  # will not start again until it is back under.
+  out=$("$BB" run "$NAME" -- true 2>&1)
+  if echo "$wrote$out" | grep -q "over its data_size" && echo "$out" | grep -q "over its data_size"; then
+    pass "a sandbox that filled /data past data_size was stopped and will not start again"
+  else
+    fail "a sandbox past its data_size still runs (dd: $(echo "$wrote" | tail -1); box run: $(echo "$out" | head -1))"
+  fi
+fi
 
 echo
 if [ "$FAILS" -eq 0 ]; then

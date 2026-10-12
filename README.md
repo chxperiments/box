@@ -40,6 +40,7 @@ backend: auto          # firecracker when it fits, else podman; or name one
 isolation: strict      # the VMM runs as a UID that is not yours
 network: bridge        # or none, for no network at all
 warm: 2                # keep VMs booted so runs start in ms
+data_size: 10G         # cap /data, so an agent cannot fill your disk
 packages: [python3, git]
 ```
 

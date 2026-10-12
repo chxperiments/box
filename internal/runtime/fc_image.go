@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"box/internal/boxfile"
@@ -45,7 +46,7 @@ func fcImageDir(name string, s boxfile.Spec) (string, error) {
 		return "", err
 	}
 	return filepath.Join(dir, "images", name,
-		fmt.Sprintf("%s-a%s-s%d-r%d-c%d-%s", id[:12], agentHash, shift, s.RAMMiB, s.CPUs, roFlag(s))), nil
+		fmt.Sprintf("%s-a%s-s%d-r%d-c%d-d%d-%s", id[:12], agentHash, shift, s.RAMMiB, s.CPUs, fcDataBytes(s)>>20, roFlag(s))), nil
 }
 
 func roFlag(s boxfile.Spec) string {
@@ -100,7 +101,31 @@ func fcImage(name string, s boxfile.Spec) (string, error) {
 	if err := fcSnapshot(name, s, dir); err != nil {
 		return "", err
 	}
+	removeStaleImages(dir)
 	return dir, nil
+}
+
+// removeStaleImages deletes a sandbox's other images. Each is a rootfs and a
+// full memory snapshot (its RAM in size), keyed on everything that shapes it
+// -- the image, box's own build, isolation, RAM, CPUs, /data's size -- so
+// every change, a box upgrade included, makes a new one; without this the
+// old ones stayed forever. A VM still restored from one keeps its files
+// open, and Linux keeps them until it exits.
+func removeStaleImages(current string) {
+	parent := filepath.Dir(current)
+	entries, err := os.ReadDir(parent)
+	if err != nil {
+		return
+	}
+	var stale []string
+	for _, e := range entries {
+		if e.IsDir() && e.Name() != filepath.Base(current) {
+			stale = append(stale, filepath.Join(parent, e.Name()))
+		}
+	}
+	if len(stale) > 0 {
+		inPodmanNS(append([]string{"rm", "-rf", "--"}, stale...)...).Run()
+	}
 }
 
 // fcRootfs writes rootfs.ext4: the image's files exported by podman and
@@ -203,13 +228,40 @@ func FirecrackerDataExists(name string) bool {
 	return err == nil
 }
 
-func fcDataDisk(name string) (string, error) {
+// fcDataBytes is the size of a sandbox's /data disk: data_size, or 8 GiB.
+// The disk is sparse, so only what /data holds takes space.
+func fcDataBytes(s boxfile.Spec) int64 {
+	if n, err := s.DataBytes(); err == nil && n > 0 {
+		return n
+	}
+	return int64(fcDataDiskGiB) << 30
+}
+
+// fcDataDisk returns the sandbox's /data disk, created at size the first
+// time. The disk is data_size's limit: the guest's kernel refuses a write
+// that does not fit. A disk smaller than size is grown, offline, keeping
+// its files; one larger is refused, since shrinking a filesystem in place
+// is how data is lost.
+func fcDataDisk(name string, size int64) (string, error) {
 	disk, err := fcDataDiskPath(name)
 	if err != nil {
 		return "", err
 	}
-	if _, err := os.Stat(disk); err == nil {
-		return disk, nil
+	if fi, err := os.Stat(disk); err == nil {
+		switch {
+		case fi.Size() == size:
+			return disk, nil
+		case fi.Size() > size:
+			return "", fmt.Errorf("%s's /data disk is %s, larger than its data_size %s, and a disk cannot shrink in place: "+
+				"box data export %s ./%s-data && box reset %s -y, then box data import %s ./%s-data",
+				name, humanBytes(fi.Size()), humanBytes(size), name, name, name, name, name)
+		}
+		// Never resize a disk a running VM has mounted.
+		if holder, err := os.ReadFile(diskLockPath(name)); err == nil && fcAlive(string(holder)) {
+			return "", fmt.Errorf("%s's /data disk is in use by %s; bring it down to grow /data to its new data_size",
+				name, strings.TrimSpace(string(holder)))
+		}
+		return disk, growDisk(disk, size)
 	}
 	if err := os.MkdirAll(filepath.Dir(disk), 0o700); err != nil {
 		return "", err
@@ -220,7 +272,7 @@ func fcDataDisk(name string) (string, error) {
 	tmp := name + ".ext4.partial"
 	cmd := exec.Command("podman", "run", "--rm", "--pull=never", "--network=none",
 		"-v", filepath.Dir(disk)+":/out", fcToolsImage,
-		"sh", "-c", fmt.Sprintf("truncate -s %dG /out/%s && mkfs.ext4 -q -F -L data /out/%s", fcDataDiskGiB, tmp, tmp))
+		"sh", "-c", fmt.Sprintf("truncate -s %d /out/%s && mkfs.ext4 -q -F -L data /out/%s", size, tmp, tmp))
 	if out, err := cmd.CombinedOutput(); err != nil {
 		return "", fmt.Errorf("creating %s's /data disk: %s", name, strings.TrimSpace(string(out)))
 	}
@@ -228,6 +280,36 @@ func fcDataDisk(name string) (string, error) {
 		return "", err
 	}
 	return disk, nil
+}
+
+// growDisk enlarges an unmounted ext4 disk and its filesystem. A strict
+// sandbox's disk belongs to its UID; it is given back to you for the resize
+// and handed to the sandbox again at its next start.
+func growDisk(disk string, size int64) error {
+	if err := fcTools(); err != nil {
+		return err
+	}
+	if out, err := exec.Command("podman", "unshare", "chown", "0:0", disk).CombinedOutput(); err != nil {
+		return fmt.Errorf("growing %s: %s", disk, strings.TrimSpace(string(out)))
+	}
+	// Check for the tools first, and put the size back if the resize fails:
+	// a grow either happens whole or leaves the disk as it was.
+	cmd := exec.Command("podman", "run", "--rm", "--pull=never", "--network=none",
+		"-v", filepath.Dir(disk)+":/out", fcToolsImage, "sh", "-c", `
+d=/out/$1
+command -v resize2fs >/dev/null || { echo "resize2fs is missing from the tools image"; exit 1; }
+orig=$(stat -c %s "$d")
+truncate -s "$2" "$d" || exit 1
+e2fsck -fy "$d" >/dev/null 2>&1
+if [ $? -gt 1 ] || ! resize2fs "$d" >/dev/null 2>&1; then
+  truncate -s "$orig" "$d"
+  echo "the filesystem could not be grown; the disk is unchanged"
+  exit 1
+fi`, "sh", filepath.Base(disk), strconv.FormatInt(size, 10))
+	if out, err := cmd.CombinedOutput(); err != nil {
+		return fmt.Errorf("growing %s to %s: %s", disk, humanBytes(size), strings.TrimSpace(string(out)))
+	}
+	return nil
 }
 
 // fcSnapshot boots the image once, waits for its agent, pauses it and
@@ -249,7 +331,7 @@ func fcSnapshot(name string, s boxfile.Spec, dir string) error {
 	// a restored copy is prepared.
 	placeholder := filepath.Join(dir, "placeholder.ext4")
 	if f, err := os.Create(placeholder); err == nil {
-		f.Truncate(int64(fcDataDiskGiB) << 30)
+		f.Truncate(fcDataBytes(s)) // the snapshot's disk must be the size every restore attaches
 		f.Close()
 	}
 	defer os.Remove(placeholder)

@@ -100,7 +100,7 @@ func (b fcBackend) Launch(name string, s boxfile.Spec, l Launch) (*exec.Cmd, err
 	if err != nil {
 		return nil, err
 	}
-	disk, err := fcDataDisk(name)
+	disk, err := fcDataDisk(name, fcDataBytes(s))
 	if err != nil {
 		return nil, err
 	}

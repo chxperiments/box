@@ -46,6 +46,7 @@ type Spec struct {
 	ReadOnlyRootfs bool              `yaml:"readonly"`
 	TimeoutSeconds int               `yaml:"timeout_seconds"` // 0 = unlimited
 	Warm           int               `yaml:"warm"`            // VMs kept booted for run; 0 = boot per run
+	DataSize       string            `yaml:"data_size"`       // /data's limit, e.g. 10G; empty = none (8G disk on firecracker)
 	Isolation      string            `yaml:"isolation"`       // "standard" or "strict": VMM under its own host UID
 	Backend        string            `yaml:"backend"`         // what boots the VM: podman (default), krun, firecracker
 	Seccomp        string            `yaml:"seccomp"`         // profile path, filters the VMM
@@ -132,6 +133,41 @@ func FirecrackerFits(s Spec) error {
 	return nil
 }
 
+// MinDataSize is the smallest data_size: below it ext4 has little room left.
+const MinDataSize = 64 << 20
+
+// DataBytes is data_size in bytes, or 0 when the Boxfile sets none.
+// Sizes are 1024-based: 512M, 10G, 1T; a bare number is bytes.
+func (s Spec) DataBytes() (int64, error) {
+	v := strings.TrimSpace(s.DataSize)
+	if v == "" {
+		return 0, nil
+	}
+	mult := int64(1)
+	switch strings.ToUpper(v[len(v)-1:]) {
+	case "K":
+		mult = 1 << 10
+	case "M":
+		mult = 1 << 20
+	case "G":
+		mult = 1 << 30
+	case "T":
+		mult = 1 << 40
+	}
+	num := v
+	if mult > 1 {
+		num = v[:len(v)-1]
+	}
+	n, err := strconv.ParseInt(strings.TrimSpace(num), 10, 64)
+	if err != nil || n <= 0 || n > (1<<62)/mult {
+		return 0, fmt.Errorf("data_size must be a size like 512M, 10G or 1T, got %q", s.DataSize)
+	}
+	if n*mult < MinDataSize {
+		return 0, fmt.Errorf("data_size must be at least 64M, got %q", s.DataSize)
+	}
+	return n * mult, nil
+}
+
 // BackendNames lists the accepted backends for error messages.
 func BackendNames() string { return strings.Join(Backends, ", ") }
 
@@ -150,6 +186,7 @@ isolation: standard   # strict: VMM runs as a UID that is not yours (use for age
 backend: auto         # auto: firecracker when it fits (offline, no mounts, no warm pool), else podman | podman | krun | firecracker
 timeout_seconds: 0    # per-run wall clock limit, 0 = unlimited
 warm: 0               # VMs kept booted so run starts in ms (each holds its RAM)
+data_size: 10G        # /data's limit: exact on firecracker, checked every 2 s on podman
 
 # Tools baked into the image. Reset every run; keep work in /data.
 packages:
@@ -244,6 +281,9 @@ func (s Spec) validate() error {
 		if err := FirecrackerFits(s); err != nil {
 			return err
 		}
+	}
+	if _, err := s.DataBytes(); err != nil {
+		return err
 	}
 	if s.Isolation != "standard" && s.Isolation != "strict" {
 		return fmt.Errorf("isolation must be standard or strict, got %q", s.Isolation)

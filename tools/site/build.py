@@ -699,6 +699,7 @@ BOXFILE_FIELDS = [
     ("readonly", "bool", "false", "Read-only root; /tmp and /data stay writable."),
     ("timeout_seconds", "int", "0", "Per-command limit; exits 124. 0 is unlimited."),
     ("warm", "0 to 8", "0", "VMs kept booted for run (podman, krun)."),
+    ("data_size", "e.g. 512M, 10G", "none (8G on firecracker); new Boxfiles: 10G", "Caps /data. Exact on firecracker, where /data is a disk of this size. On podman and krun box measures it: it will not start a sandbox that is over, and stops a running one within 2 s of going over."),
     ("warmup", "shell lines", "", "Run once in each warm VM before it serves a run."),
     ("packages", "names", "", "Installed with the image's package manager."),
     ("run", "shell lines", "", "Extra build steps."),

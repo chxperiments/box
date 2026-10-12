@@ -68,10 +68,14 @@ type FSReport struct {
 
 // DataReport is the one thing that persists between runs.
 type DataReport struct {
-	Host  string `json:"host"`
-	Kind  string `json:"kind"` // directory | disk
-	Owner string `json:"owner,omitempty"`
-	Mode  string `json:"mode,omitempty"`
+	Host        string `json:"host"`
+	Kind        string `json:"kind"` // directory | disk
+	Owner       string `json:"owner,omitempty"`
+	Mode        string `json:"mode,omitempty"`
+	Limit       string `json:"limit"` // data_size, or none
+	Used        string `json:"used,omitempty"`
+	Over        bool   `json:"over_limit"`
+	Enforcement string `json:"enforcement"`
 }
 
 // MountReport is one host directory the Boxfile shares in.
@@ -336,13 +340,23 @@ func parseVolume(v string) (MountReport, bool) {
 func dataReport(name string, s boxfile.Spec) DataReport {
 	if s.Backend == "firecracker" {
 		d, _ := fcDataDiskPath(name) // a report never creates the disk
-		dr := DataReport{Host: d, Kind: "disk"}
+		dr := DataReport{Host: d, Kind: "disk", Limit: humanBytes(fcDataBytes(s)),
+			Enforcement: "exact: the disk is the limit, and the guest's kernel refuses a write that does not fit"}
 		statInto(&dr, d)
 		return dr
 	}
 	src, _ := sandbox.DataSource(name)
-	dr := DataReport{Host: src, Kind: "directory"}
+	dr := DataReport{Host: src, Kind: "directory", Limit: "none",
+		Enforcement: "none: /data can grow until the host disk is full"}
 	statInto(&dr, src)
+	if used, err := dataUsage(name); err == nil {
+		dr.Used = humanBytes(used)
+		if limit, ok := quotaApplies(s); ok {
+			dr.Limit = s.DataSize
+			dr.Over = used > limit
+			dr.Enforcement = "measured: box refuses to start the sandbox while over, and checks every 2 s while it runs, stopping the VM when it goes over; a fast writer can overshoot by what it writes in 2 s"
+		}
+	}
 	return dr
 }
 
@@ -515,6 +529,13 @@ func findings(r Report, s boxfile.Spec) []Finding {
 	}
 	if r.Network.Egress == "all" {
 		add("warn", "full internet egress: anything the guest can read, including /data and mounts, can leave. Per-sandbox allowlists are planned (#7).")
+	}
+	if r.Filesystem.Data.Over {
+		add("fail", fmt.Sprintf("/data holds %s, over its data_size %s: box will not start the sandbox until it is back under",
+			r.Filesystem.Data.Used, r.Filesystem.Data.Limit))
+	}
+	if r.Filesystem.Data.Limit == "none" {
+		add("warn", "no data_size: /data can grow until the host disk is full. Set data_size in the Boxfile.")
 	}
 	for _, m := range r.Filesystem.Mounts {
 		if m.Mode == "rw" {

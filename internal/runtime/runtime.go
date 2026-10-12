@@ -103,6 +103,9 @@ var ErrNoSandbox = errors.New("no sandbox")
 // a warm pool and one is waiting, otherwise one booted now. notice, if not
 // nil, hears about slow paths such as a re-verification.
 func RunFresh(name string, s boxfile.Spec, argv []string, streams Streams, notice func(string)) error {
+	if err := overQuota(name, s); err != nil {
+		return err
+	}
 	// A pooled VM was checked when it booted and its kernel is checked again
 	// before the command starts, so the warm path skips the toolchain checks
 	// below and costs a connection, not a boot.
@@ -122,7 +125,14 @@ func UpChecked(name string, s boxfile.Spec, notice func(string)) (time.Duration,
 	if err := checked(name, s, notice); err != nil {
 		return 0, err
 	}
-	return Up(name, s)
+	if err := overQuota(name, s); err != nil {
+		return 0, err
+	}
+	d, err := Up(name, s)
+	if err == nil {
+		spawnDataWatch(name, s)
+	}
+	return d, err
 }
 
 // checked confirms the toolchain is present and the kernel boundary still
@@ -382,7 +392,22 @@ func Run(name string, s boxfile.Spec, argv []string, streams Streams) error {
 		})
 		defer stop()
 	}
+	done := make(chan struct{})
+	exceeded := watchQuota(name, s, done, func() {
+		if cmd.Process != nil {
+			cmd.Process.Kill()
+		}
+		b.Remove(runName)
+	})
 	err = streamTee(cmd, streams, log)
+	close(done)
+	if qerr := exceeded(); qerr != nil {
+		b.Remove(runName)
+		if log != nil {
+			fmt.Fprintf(log, "=== stopped: %v\n", qerr)
+		}
+		return fmt.Errorf("%w; box stopped the VM", qerr)
+	}
 	if log != nil {
 		code := 0
 		if err != nil {
