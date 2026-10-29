@@ -46,9 +46,9 @@ jobs:
           sudo usermod --add-subuids 262144-4456447 --add-subgids 262144-4456447 "$USER"
           podman system migrate
           command -v crun || sudo apt-get install -y crun
-          # Until #56 lands, box up wants krun on PATH whatever the backend.
-          # Remove this then, so the job is a firecracker-only host.
-          sudo ln -sf "$(command -v crun)" /usr/local/bin/krun
+          # A firecracker-only host: firecracker never runs krun, and box must
+          # not need it (#56). Fail rather than test with it present.
+          if command -v krun; then echo "krun is on PATH; this job must run without it" >&2; exit 1; fi
 
       - name: host
         run: |
